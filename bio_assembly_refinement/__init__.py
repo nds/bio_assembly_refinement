@@ -1,4 +1,4 @@
-__all__ = [ 'overlapping_contig_removal',
+__all__ = [ 'contig_cleanup',
 			'circularisation',
 			'utils',
 		   ]

@@ -8,7 +8,6 @@ modules_dir = os.path.dirname(os.path.abspath(contig_cleanup.__file__))
 data_dir = os.path.join(modules_dir, 'tests', 'data')
 
 class TestContigCleanup(unittest.TestCase):
-
 	def test_find_small_contigs(self):
 		'''Test _find_small_contigs'''
 		input_file = os.path.join(data_dir, 'test_fasta_file_two.fa')
@@ -45,8 +44,20 @@ class TestContigCleanup(unittest.TestCase):
 		'''Test run'''
 		input_file = os.path.join(data_dir, 'test_fasta_file_three.fa')
 		expected_output = os.path.join(data_dir, 'filtered_test_fasta_file_three.fa')
-		actual_output = 'tmp.filtered.fa'
-		ccleaner = contig_cleanup.ContigCleanup(input_file, actual_output, cutoff_contig_length=9)
+		ccleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=9, debug=True)
 		ccleaner.run()
-		self.assertTrue(filecmp.cmp(actual_output, expected_output, shallow=False))
-		#os.unlink(actual_output)
+		actual_output = "tmp.filtered.fa"
+		self.assertTrue(os.path.isfile(actual_output))# Does output file still exist and is it named right? 
+		self.assertTrue(filecmp.cmp(actual_output, expected_output, shallow=False)) 
+		os.remove("tmp.filtered.fa")
+
+		ccleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=9)
+		ccleaner.run()
+		contig_ids_file = input_file + '.contig.ids.remove'
+		self.assertFalse(os.path.isfile(contig_ids_file))# Has it cleaned up the ids file?
+		
+		another_input_file = os.path.join(data_dir, 'test_fasta_file_four.fa')
+		ccleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=9) #Fasta file with contig 13 with deletion and rev comp bases at end
+		ccleaner.run()
+		self.assertTrue(filecmp.cmp(actual_output, expected_output, shallow=False)) 
+		os.remove("tmp.filtered.fa")

@@ -14,32 +14,34 @@ TODO:
 
 import os
 import re
-from fastaq import tasks
+from fastaq import tasks, sequences, utils
 from pymummer import coords_file, alignment, nucmer
-from bio_assembly_refinement.utils import utils
 
 class Circularisation:
 	def __init__(self, 
+				 dnaA_sequence,
 				 fasta_file=None, 
-				 output_file="tmp.circularised.fa", 
+				 output_file="circularised.fa", 
 				 contigs={},
 				 alignments=[],
+				 dnaA_alignments=[], # For testing 
 				 offset=12, #Acceptable offset from edge as a percentage
 				 max_match_length=0.5, 
-				 percent_identity=99,
-				 dnaA_sequence=None,			  
+				 percent_identity=99,			  
 				 debug=False):
 				 
 		''' Constructor '''
+		self.dnaA_sequence = dnaA_sequence
 		self.fasta_file = fasta_file
 		self.output_file = output_file
 		self.contigs = contigs
 		self.alignments = alignments
+		self.dnaA_alignments = dnaA_alignments
 		self.offset = offset
 		self.max_match_length = max_match_length
 		self.percent_identity = percent_identity
-		self.dnaA_sequence = "path to file"
 		self.debug = debug
+		self.trim_values = {}
 		
 		# Extract contigs and generate nucmer hits if not provided
 		if not self.contigs:
@@ -57,16 +59,13 @@ class Circularisation:
 	def _circularisable(self, contig_id):
 		''' 
 		Returns true if the ends of a contig overlap
-		Sample nucmer hit showing ends overlapping:
-		1	2182	4783104	4780922	2182	2183	99.82	4791129	4791129	1	unitig_0|quiver	unitig_0|quiver
-		
 		TODO: 
 		1. Optimise. We go through each alignment in contigcleanup. Can that information be re-used?
-		2. Move this check to alignment class?
-		'''
-		
+		2. Move this check to pymmumer alignment class?
+		'''	
+		 
 		for algn in self.alignments:
-			acceptable_offset = (self.offset*0.01) * algn.ref_length		
+			acceptable_offset = (self.offset * 0.01) * algn.ref_length
 			if algn.qry_name == contig_id and \
 			   algn.ref_name == contig_id and \
 			   algn.ref_start < acceptable_offset and \
@@ -74,34 +73,58 @@ class Circularisation:
 			   algn.qry_start > (algn.qry_length * self.max_match_length) and \
 			   algn.qry_end > (algn.qry_length - acceptable_offset) and \
 			   algn.percent_identity > self.percent_identity:
-				return True  
-		return False
+				self.trim_values[contig_id] = round(algn.hit_length_ref/2)
+				return True
+		return False		
+		  
 		
-		
-	def _circularise(self, contig_ids):
+	def _trim_and_circularise(self, contig_ids):
 		'''
-		Create a temporary FASTA file with contigs (choosing this as opposed to writing one contig to a file each time)
+		Create a temporary FASTA file with circularisable contigs (choosing this as opposed to writing one contig to a file each time)
 		Run nucmer with dnaA/refA/refB sequences 
-		For each contig, split at site of match (if available), trim one overlapping end and re-join
-		Return new contig sequence
+		For each contig, split at site of match and re-join
 		'''
-		temp_file = "temp.contigs.fa"
-		regex = "|".join(re.escape(id) for id in contig_ids)
-		cmd = " ".join(["fastaq filter", self.fasta_file, temp_file, "--regex=\""+regex+"\""])
-		print(cmd)
-		utils.syscall(cmd)
 		
-				
-				
-	def run(self):
-		sorted_contig_ids = sorted(self.contigs.keys()) #Sorting so that results are consistent in output file (for testing)
-		circularisable_contigs = []
-		for contig_id in sorted_contig_ids:
-			if self._circularisable(contig_id):
- 				print (contig_id)
- 				circularisable_contigs.append(contig_id)
- 				# Circularise and output contig
-# 			else:
-				# Just output contig as it is
+		if not self.dnaA_alignments:
+			temp_fasta_file = "temp.contigs.fa"
+			self._write_contigs_to_file(contig_ids, temp_fasta_file)		
+			results_file = "assembly_against_dnaA.coords"
+			runner = nucmer.Runner(temp_fasta_file, self.dnaA_sequence, results_file, coords_header=False, maxmatch=True) 
+			runner.run()
+			file_reader = coords_file.reader(results_file)
+			self.dnaA_alignments = [coord for coord in file_reader] 
+		 
+		for contig_id in contig_ids:			   		
+			for algn in self.dnaA_alignments:	
+				if algn.ref_name == contig_id and \
+				   algn.hit_length_ref > 0.95*(algn.qry_length) and\
+				   algn.percent_identity > 99:			       
+					original_sequence = self.contigs[contig_id]
+					# Trim
+					cutoff = self.trim_values[contig_id]
+					self.contigs[contig_id] = original_sequence[cutoff:len(original_sequence)-cutoff]
+					# Circularise
+					trimmed_sequence = self.contigs[contig_id]
+					self.contigs[contig_id] = trimmed_sequence[(algn.ref_start-1-cutoff):] + trimmed_sequence[0:(algn.ref_start-1-cutoff)] 
+					
+	  
+	def _write_contigs_to_file(self, contig_ids, out_file):
+		output_fw = utils.open_file_write(out_file)
+		for id in contig_ids:
+			print(sequences.Fasta(id, self.contigs[id]), file=output_fw)
 			   
-		self._circularise(circularisable_contigs)
+			   
+	def run(self):
+		circularisable_contigs = []
+		remaining_contigs = []
+		for contig_id in self.contigs.keys():
+			if self._circularisable(contig_id):
+				circularisable_contigs.append(contig_id)
+				self._trim_and_circularise(circularisable_contigs)
+			else:
+				remaining_contigs.append(contig_id)
+								
+		# Write all contigs to a file, ordered by size of contig (re-think)
+		self._write_contigs_to_file(sorted(self.contigs, key=lambda id: len(self.contigs[id]), reverse=True), self.output_file)
+	
+#		self._write_contigs_to_file(circularisable_contigs + remaining_contigs, self.output_file)

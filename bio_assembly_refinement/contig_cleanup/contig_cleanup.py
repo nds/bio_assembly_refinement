@@ -38,7 +38,7 @@ class ContigCleanup:
 		runner = nucmer.Runner(self.fasta_file, self.fasta_file, results_file, coords_header=False, maxmatch=True) # nucmer default breaklength is 200
 		runner.run()
 		file_reader = coords_file.reader(results_file)
-		alignments = [coord for coord in file_reader if not coord.is_self_hit()] #Remove self hits
+		alignments = [coord for coord in file_reader if not coord.is_self_hit()] #Remove self hits (?) Keep these actually...
 		return alignments
 
 			

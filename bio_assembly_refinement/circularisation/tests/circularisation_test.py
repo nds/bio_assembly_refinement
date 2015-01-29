@@ -10,12 +10,30 @@ data_dir = os.path.join(modules_dir, 'tests', 'data')
 class TestCircularisation(unittest.TestCase):
 	def test_circularisable(self):
 		'''Test _circularisable'''
-		input_file = os.path.join(data_dir, 'Salmonella_typhi_CT18_pacbio_ordered.fa')
-# 		expected_ids = ['test5', 'test4']
-		circulariser = circularisation.Circularisation(input_file)
-		circulariser.run()
-		
-		# Check circularisable step independently
-		# Check if class can take fasta file and/or contigs and nucmer hits
+		# Test data with 4 base overlap between ends of contig1 to simulate circularisable contig 
+		test_hits = ['\t'.join(['1', '4', '60', '57', '4', '4', '100.00', '60', '60', '1', '1', 'contig1', 'contig1']),
+				 	'\t'.join(['7', '9', '54', '52', '3', '3', '100.00', '60', '60', '1', '1', 'contig2', 'contig2'])
+		]
+		test_alignments = []
+		for algn in test_hits:
+			test_alignments.append(alignment.Alignment(algn))
 
+		test_contigs = { "contig1": "TATCGAGTATATTATCAACTGGACCGCCTCCGACGCATATAATTATGAAAATGGCTCTAT",
+					 	 "contig2": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC"
+				   		}
+		# Does constructor take pre-computed results?	   
+		circulariser = circularisation.Circularisation(contigs=test_contigs,
+												   alignments = test_alignments,
+												   offset = 7
+												   )
+
+		# Does circularisable check work?
+		self.assertTrue(circulariser._circularisable("contig1"))
+		self.assertFalse(circulariser._circularisable("contig2"))
+		
+		# Does constructor take fasta file?
+		input_file = os.path.join(data_dir, "Salmonella_typhi_CT18_pacbio.fa")
+		circulariser = circularisation.Circularisation(fasta_file=input_file)
+		
+	
 

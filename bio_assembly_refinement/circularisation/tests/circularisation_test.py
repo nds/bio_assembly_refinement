@@ -51,9 +51,10 @@ class TestCircularisation(unittest.TestCase):
 		self.assertTrue(filecmp.cmp("circularised.fa", expected_output, shallow=False)) 
 		
 		# Does constructor take fasta file?
-# 		input_file = os.path.join(data_dir, "test_contigs.fa")
-# 		circulariser = circularisation.Circularisation(dnaA_sequence = test_dnaA_file, fasta_file=input_file, offset=7)
-# 		circulariser.run()
-		
+		input_file = os.path.join(data_dir, "Salmonella_typhi_CT18_pacbio.fa")
+		dnaA_file = os.path.join(data_dir, "dnaA.fa")
+		circulariser = circularisation.Circularisation(dnaA_sequence = dnaA_file, fasta_file=input_file)
+		circulariser.run()
+
 	
 

@@ -1,6 +1,7 @@
 __all__ = [ 'contig_cleanup',
 			'circularisation',
-			'utils',
+			'reassembly',
+			'main'
 		   ]
 from bio_assembly_refinement import *
 

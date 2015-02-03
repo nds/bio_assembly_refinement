@@ -1,5 +1,0 @@
-#!/usr/bin/env perl
-
-if(not -d "reassembly") {
-	system("mkdir reassembly")
-}

@@ -33,8 +33,9 @@ class ContigCleanup:
 				 percent_match=95, 
 				 debug=False):
 		''' Constructor '''
-		self.fasta_file = fasta_file		
-		if not working_directory:
+		self.fasta_file = fasta_file
+		self.working_directory = working_directory		
+		if not self.working_directory:
 			self.working_directory = os.getcwd()			
 		self.cutoff_contig_length = cutoff_contig_length
 		self.percent_match = percent_match
@@ -44,7 +45,7 @@ class ContigCleanup:
 		tasks.file_to_dict(self.fasta_file, self.contigs) #Read contig ids and sequences into dict
 		self.alignments = []
 		self.filtered_contigs = []
-		self.output_filename = self._build_final_filename()
+		self.output_file = self._build_final_filename()
 
 	
 	def _find_small_contigs(self):
@@ -109,7 +110,7 @@ class ContigCleanup:
 			
 		contained_contigs = self._find_contained_contigs(intermediate_file) #Run nucmer after filtering small contigs to save holding unnecessary contigs and hits in memory
 		contig_ids_file_2 = utils.write_ids_to_file(contained_contigs, "contig.ids.contained")
-		tasks.filter(intermediate_file, self.output_filename, ids_file=contig_ids_file_2, invert=True)
+		tasks.filter(intermediate_file, self.output_file, ids_file=contig_ids_file_2, invert=True)
 		
 		for id in small_contigs + contained_contigs:
 			del self.contigs[id] #No longer care about contigs thrown away			

@@ -60,8 +60,9 @@ class Circularisation:
 		''' Constructor '''
 		self.dnaA_sequence = dnaA_sequence
 		self.fasta_file = fasta_file
-		if not working_directory:
-			self.working_directory = os.getcwd()	
+		self.working_directory = working_directory		
+		if not self.working_directory:
+			self.working_directory = os.getcwd()		
 		self.contigs = contigs
 		self.alignments = alignments
 		self.dnaA_alignments = dnaA_alignments
@@ -80,7 +81,7 @@ class Circularisation:
 		if not self.alignments:
 			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename())
 		
-		self.output_filename = self._build_final_filename()
+		self.output_file = self._build_final_filename()
 		
 		
 	def _circularisable(self, contig_id):
@@ -170,7 +171,7 @@ class Circularisation:
 								
 		# Write all contigs to a file, ordered by size of contig (re-think. should contigs be re-named ti indicate possible chromosomes/plasmids?)
 #		self._write_contigs_to_file(sorted(self.contigs, key=lambda id: len(self.contigs[id]), reverse=True), self.output_file)	
-		self._write_contigs_to_file(circularisable_contigs, self.output_filename) # Only write circularised contigs
+		self._write_contigs_to_file(circularisable_contigs, self.output_file) # Only write circularised contigs
 		
 		if not self.debug:
 			utils.delete(self._build_dnaA_alignments_filename())

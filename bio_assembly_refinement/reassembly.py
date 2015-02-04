@@ -40,7 +40,8 @@ class Reassembly:
 		self.read_data = read_data
 		self.output_directory = output_directory
 		self.pacbio_exec = pacbio_exec
-		if not working_directory:
+		self.working_directory = working_directory		
+		if not self.working_directory:
 			self.working_directory = os.getcwd()		
 		self.debug = debug
 		self.output_file = self._build_final_filename()

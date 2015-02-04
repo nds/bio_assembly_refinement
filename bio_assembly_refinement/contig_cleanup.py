@@ -132,3 +132,5 @@ class ContigCleanup:
 			os.remove(contig_ids_file_2)
 			os.remove(intermediate_file)
 			os.remove(self._build_alignments_filename())
+			
+		os.chdir(original_dir)

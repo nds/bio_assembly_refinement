@@ -23,7 +23,7 @@ __1.	MUMmer__
 
 Instructions to install MUMmer can be found [here](http://mummer.sourceforge.net/manual/#installation)
     
-__2.	pacbio_smrtanalysis RS_sequencing__
+__2.	pacbio\_smrtanalysis RS\_sequencing__
 	
 [Installation instructions to be completed]
 

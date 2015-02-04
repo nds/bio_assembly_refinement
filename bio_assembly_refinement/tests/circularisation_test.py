@@ -31,7 +31,8 @@ class TestCircularisation(unittest.TestCase):
 													   contigs=test_contigs,
 												       alignments = test_overlap_alignments,
 												       dnaA_alignments = test_dnaA_alignments,
-												       overlap_offset = 7
+												       overlap_offset = 7,
+												       
 												      )
 		# Does circularisable check work?
 		self.assertTrue(circulariser._circularisable("contig1"))

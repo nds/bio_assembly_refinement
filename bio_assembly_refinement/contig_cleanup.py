@@ -22,10 +22,16 @@ contigs_removed = ccleaner.get_filtered_contigs()
 
 import os
 from fastaq import tasks
-from pymummer import coords_file, alignment, nucmer
+from pymummer import alignment
+from bio_assembly_refinement import utils
 
 class ContigCleanup:
-	def __init__(self, fasta_file, working_directory=None, cutoff_contig_length=10000, percent_match=95, debug=False):
+	def __init__(self, 
+				 fasta_file, 
+				 working_directory=None, 
+				 cutoff_contig_length=10000, 
+				 percent_match=95, 
+				 debug=False):
 		''' Constructor '''
 		self.fasta_file = fasta_file		
 		if not working_directory:
@@ -48,20 +54,11 @@ class ContigCleanup:
 			if len(self.contigs[id]) < self.cutoff_contig_length:
 				small_contigs.append(id)
 		return small_contigs		
-				
-				
-	def _run_nucmer(self, input_file):
-		'''Run nucmer and populate a list of alignment objects'''
-		results_file = self._build_alignments_filename()
-		runner = nucmer.Runner(input_file, input_file, results_file, coords_header=False, maxmatch=True) # nucmer default break length is 200
-		runner.run()
-		file_reader = coords_file.reader(results_file)
-		self.alignments = [coord for coord in file_reader] 
-
+	
 	
 	def _find_contained_contigs(self, filename):
 		'''Parse alignments and identify contained contigs'''
-		self._run_nucmer(filename)
+		self.alignments = utils.run_nucmer(filename, filename, self._build_alignments_filename())
 		contained_contigs = []
 		sorted_contig_ids = sorted(self.contigs.keys()) #Sorting so that results are consistent each time
 		for contig_id in sorted_contig_ids:
@@ -98,39 +95,29 @@ class ContigCleanup:
 	def _build_final_filename(self):
 		input_filename = os.path.basename(self.fasta_file)
 		return os.path.join(self.working_directory, "filtered_" + input_filename)	
-		
-		
-	def _contig_ids_to_file(self, contigs, filename):
-		'''Helper function to write contig ids to a file'''
-		with open(filename, mode='wt') as ids_file:
-			ids_file.write('\n'.join(contigs))
-		return filename
 	
 	
 	def run(self):
-		'''
-		Run necessary steps and produce a filtered fasta file.
-		Delete temp files if debug is false
-		'''	
+		'''Produce a filtered fasta file.'''	
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
 		intermediate_file = self._build_intermediate_filename()
 				
 		small_contigs = self._find_small_contigs()
-		contig_ids_file_1 = self._contig_ids_to_file(small_contigs,"contig.ids.too.small")
+		contig_ids_file_1 = utils.write_ids_to_file(small_contigs, "contig.ids.too.small")  
 		tasks.filter(self.fasta_file, intermediate_file, ids_file=contig_ids_file_1, invert=True)
 			
 		contained_contigs = self._find_contained_contigs(intermediate_file) #Run nucmer after filtering small contigs to save holding unnecessary contigs and hits in memory
-		contig_ids_file_2 = self._contig_ids_to_file(contained_contigs, 'contig.ids.contained')
+		contig_ids_file_2 = utils.write_ids_to_file(contained_contigs, "contig.ids.contained")
 		tasks.filter(intermediate_file, self.output_filename, ids_file=contig_ids_file_2, invert=True)
 		
 		for id in small_contigs + contained_contigs:
-			del self.contigs[id]			
+			del self.contigs[id] #No longer care about contigs thrown away			
 	
 		if not self.debug:
-			os.remove(contig_ids_file_1)
-			os.remove(contig_ids_file_2)
-			os.remove(intermediate_file)
-			os.remove(self._build_alignments_filename())
-			
+			utils.delete(contig_ids_file_1)
+			utils.delete(contig_ids_file_2)
+			utils.delete(intermediate_file)
+			utils.delete(self._build_alignments_filename())
+		
 		os.chdir(original_dir)

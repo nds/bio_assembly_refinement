@@ -1,130 +1,180 @@
 '''
-Take (or generate) a set of contigs and nucmer hits
-For each contig, decide if it is circularisable
-If it is, run nucmer against dnaA/repA/repB sequence
-If match found, make that site the start, trim one overlapping end off contig and re-attach
-Return file containing all contigs (some now circularised) 
 
-TODO:
+Class to trim and circularise contigs with overlapping edges
+
+Attributes:
+-----------
+dnaA_sequence : path to file with dnaA, refA, refB sequences (positional)
+fasta_file : input fasta file
+working_directory : path to working directory (default to current working directory)
+contigs : dict of contigs (instead of fasta file)
+alignments : pre computed alignments
+dnaA_alignments : pre-computed alignments against dnaA (for testing)
+overlap_offset: offset from edge that the overlap can start expressed as a % of length (default 12)
+overlap_max_length : max length of overlap expressed as % of length of reference (default 50)
+overlap_percent_identity : percent identity of match between ends (default 99)
+dnaA_hit_percent_identity : percent identity of match to dnaA (default 99)
+dnaA_hit_length_minimum : minimum acceptable hit length to dnaA expressed as % (of dnaA length) (default 95) 
+debug : do not delete temp files if set to true (default false)
+			  
+Sample usage:
+-------------
+from bio_assembly_refinement import circularisation
+
+circulariser = circularisation.Circularisation(dnaA_sequence = dnaA_file,
+	                                           fasta_file = myfile.fa		
+											  )
+circulariser.run()
+
+Todo:
+-----
 1. Consider looking for and removing adaptor sequences for all contigs before circularising
 2. Consider running promer to find dnaA as it may be more conserved at the protein level than at the sequence level
 3. Extend logic to encompass edge cases (current version only handles very basic, straight forward cases)
+
 
 '''
 
 import os
 import re
-from fastaq import tasks, sequences, utils
-from pymummer import coords_file, alignment, nucmer
+from fastaq import tasks, sequences
+from fastaq import utils as fastaqutils
+from pymummer import alignment
+from bio_assembly_refinement import utils
 
 class Circularisation:
 	def __init__(self, 
 				 dnaA_sequence,
-				 fasta_file=None, 
-				 output_file="circularised.fa", 
+				 fasta_file='file.fa', 
+				 working_directory=None, 
 				 contigs={},
 				 alignments=[],
-				 dnaA_alignments=[], # For testing 
-				 offset=12, #Acceptable offset from edge as a percentage
-				 max_match_length=0.5, 
-				 percent_identity=99,			  
+				 dnaA_alignments=[], # Can be used for testing 
+				 overlap_offset=12, 
+				 overlap_max_length=50, 
+				 overlap_percent_identity=99,
+				 dnaA_hit_percent_identity=99,
+				 dnaA_hit_length_minimum=95,			  
 				 debug=False):
-				 
+
 		''' Constructor '''
 		self.dnaA_sequence = dnaA_sequence
 		self.fasta_file = fasta_file
-		self.output_file = output_file
+		if not working_directory:
+			self.working_directory = os.getcwd()	
 		self.contigs = contigs
 		self.alignments = alignments
 		self.dnaA_alignments = dnaA_alignments
-		self.offset = offset
-		self.max_match_length = max_match_length
-		self.percent_identity = percent_identity
+		self.overlap_offset = overlap_offset * 0.01
+		self.overlap_max_length = overlap_max_length * 0.01
+		self.overlap_percent_identity = overlap_percent_identity
+		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
+		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
 		self.debug = debug
-		self.trim_values = {}
 		
 		# Extract contigs and generate nucmer hits if not provided
 		if not self.contigs:
 			self.contigs = {}
-			tasks.file_to_dict(self.fasta_file, self.contigs) #Generate set of contigs
+			tasks.file_to_dict(self.fasta_file, self.contigs) 
 		
 		if not self.alignments:
-			results_file = str(self.fasta_file) + ".coords"
-			runner = nucmer.Runner(self.fasta_file, self.fasta_file, results_file, coords_header=False, maxmatch=True) # nucmer default breaklength is 200
-			runner.run()
-			file_reader = coords_file.reader(results_file)
-			self.alignments = [coord for coord in file_reader] #Generate set of alignments
+			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename())
+		
+		self.output_filename = self._build_final_filename()
 		
 		
 	def _circularisable(self, contig_id):
-		''' 
-		Returns true if the ends of a contig overlap
-		TODO: 
-		1. Optimise. We go through each alignment in contigcleanup. Can that information be re-used?
-		2. Move this check to pymmumer alignment class?
-		'''	
-		 
-		for algn in self.alignments:
-			acceptable_offset = (self.offset * 0.01) * algn.ref_length
+		''' Returns overlap_length/2 if the ends of a contig overlap '''
+		acceptable_offset = self.overlap_offset * len(self.contigs[contig_id])
+		
+# 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? Move check to pymummer?
+		for algn in self.alignments:			
 			if algn.qry_name == contig_id and \
 			   algn.ref_name == contig_id and \
 			   algn.ref_start < acceptable_offset and \
-			   algn.ref_end < (algn.ref_length * self.max_match_length) and \
-			   algn.qry_start > (algn.qry_length * self.max_match_length) and \
+			   algn.ref_end < (algn.ref_length * self.overlap_max_length) and \
+			   algn.qry_start > (algn.qry_length * self.overlap_max_length) and \
 			   algn.qry_end > (algn.qry_length - acceptable_offset) and \
-			   algn.percent_identity > self.percent_identity:
-				self.trim_values[contig_id] = round(algn.hit_length_ref/2)
-				return True
-		return False		
-		  
+			   algn.percent_identity > self.overlap_percent_identity:
+				trim_value = round(algn.hit_length_ref/2) # We later trim half of overlap off ends
+				return trim_value
+		return None	
 		
-	def _trim_and_circularise(self, contig_ids):
+		
+	def _trim(self, contig_id, trim_value):
+		'''Trim the ends of given contig by trim value '''	
+		original_sequence = self.contigs[contig_id]
+		self.contigs[contig_id] = original_sequence[trim_value:len(original_sequence)-trim_value]  
+		
+		
+	def _circularise(self, contig_ids):
 		'''
-		Create a temporary FASTA file with circularisable contigs (choosing this as opposed to writing one contig to a file each time)
+		Create a temporary multi FASTA file with circularisable contigs (choosing this as opposed to writing one contig to a file each time)
 		Run nucmer with dnaA/refA/refB sequences 
-		For each contig, split at site of match and re-join
+		For each contig, circularise if possible
 		'''
 		
 		if not self.dnaA_alignments:
-			temp_fasta_file = "temp.contigs.fa"
-			self._write_contigs_to_file(contig_ids, temp_fasta_file)		
-			results_file = "assembly_against_dnaA.coords"
-			runner = nucmer.Runner(temp_fasta_file, self.dnaA_sequence, results_file, coords_header=False, maxmatch=True) 
-			runner.run()
-			file_reader = coords_file.reader(results_file)
-			self.dnaA_alignments = [coord for coord in file_reader] 
+			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename())
 		 
 		for contig_id in contig_ids:			   		
 			for algn in self.dnaA_alignments:	
 				if algn.ref_name == contig_id and \
-				   algn.hit_length_ref > 0.95*(algn.qry_length) and\
-				   algn.percent_identity > 99:			       
-					original_sequence = self.contigs[contig_id]
-					# Trim
-					cutoff = self.trim_values[contig_id]
-					self.contigs[contig_id] = original_sequence[cutoff:len(original_sequence)-cutoff]
-					# Circularise
+				   algn.hit_length_ref > (self.dnaA_hit_length_minimum * algn.qry_length) and \
+				   algn.percent_identity > self.dnaA_hit_percent_identity:			       
 					trimmed_sequence = self.contigs[contig_id]
-					self.contigs[contig_id] = trimmed_sequence[(algn.ref_start-1-cutoff):] + trimmed_sequence[0:(algn.ref_start-1-cutoff)] 
+					self.contigs[contig_id] = trimmed_sequence[algn.ref_start:] + trimmed_sequence[0:algn.ref_start] 
 					
 	  
 	def _write_contigs_to_file(self, contig_ids, out_file):
-		output_fw = utils.open_file_write(out_file)
+		output_fw = fastaqutils.open_file_write(out_file)
 		for id in contig_ids:
 			print(sequences.Fasta(id, self.contigs[id]), file=output_fw)
+			
+			
+	def get_results_file(self):
+		return self.output_file
+		
+			
+	def _build_alignments_filename(self):
+		return os.path.join(self.working_directory, "nucmer_all_contigs.coords")
+		
+		
+	def _build_dnaA_alignments_filename(self):
+		return os.path.join(self.working_directory, "nucmer_matches_to_dnaA.coords")
+		
+		
+	def _build_intermediate_filename(self):
+		return os.path.join(self.working_directory, "trimmed.fa")
+		
+			
+	def _build_final_filename(self):
+		input_filename = os.path.basename(self.fasta_file)
+		return os.path.join(self.working_directory, "circularised_" + input_filename)	
 			   
 			   
 	def run(self):
-		circularisable_contigs = []
-		remaining_contigs = []
-		for contig_id in self.contigs.keys():
-			if self._circularisable(contig_id):
-				circularisable_contigs.append(contig_id)
-				self._trim_and_circularise(circularisable_contigs)
-			else:
-				remaining_contigs.append(contig_id)
-								
-		# Write all contigs to a file, ordered by size of contig (re-think)
-		self._write_contigs_to_file(sorted(self.contigs, key=lambda id: len(self.contigs[id]), reverse=True), self.output_file)
 	
-#		self._write_contigs_to_file(circularisable_contigs + remaining_contigs, self.output_file)
+		original_dir = os.getcwd()
+		os.chdir(self.working_directory)
+	
+		circularisable_contigs = []
+		for contig_id in self.contigs.keys():
+			trim_value = self._circularisable(contig_id)
+			if trim_value:
+				self._trim(contig_id, trim_value)
+				circularisable_contigs.append(contig_id)
+				
+		self._write_contigs_to_file(self.contigs, self._build_intermediate_filename()) # Write trimmed sequences to file
+		self._circularise(circularisable_contigs)
+								
+		# Write all contigs to a file, ordered by size of contig (re-think. should contigs be re-named ti indicate possible chromosomes/plasmids?)
+#		self._write_contigs_to_file(sorted(self.contigs, key=lambda id: len(self.contigs[id]), reverse=True), self.output_file)	
+		self._write_contigs_to_file(circularisable_contigs, self.output_filename) # Only write circularised contigs
+		
+		if not self.debug:
+			utils.delete(self._build_dnaA_alignments_filename())
+			utils.delete(self._build_alignments_filename())
+			utils.delete(self._build_intermediate_filename())
+		
+		os.chdir(original_dir)

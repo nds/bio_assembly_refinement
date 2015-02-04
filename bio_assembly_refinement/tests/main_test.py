@@ -2,7 +2,6 @@ import unittest
 import filecmp
 import os
 from bio_assembly_refinement import main 
-from pymummer import alignment
 
 modules_dir = os.path.dirname(os.path.abspath(main.__file__))
 data_dir = os.path.join(modules_dir, 'tests', 'data')

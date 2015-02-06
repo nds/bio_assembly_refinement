@@ -75,7 +75,7 @@ class Reassembly:
 		if os.path.exists(default_results_file):
 			shutil.move(default_results_file, self.output_file)
 		
-		if not self.debug:
+		if (not self.debug) and os.path.isdir(self.output_directory):
 			shutil.rmtree(self.output_directory)
 			
 		os.chdir(original_dir)

@@ -19,7 +19,7 @@ parser.add_argument('--overlap_max_length', type=int, help='Maximum length of th
 parser.add_argument('--overlap_percent_identity', type=int, help='Percent match identity when determining if ends of contig overlap [%(default)s]', default=99, metavar='INT')
 parser.add_argument('--dnaA_hit_percent_identity', type=int, help='Percent match identity when looking at hits to dnaA [%(default)s]', default=99, metavar='INT')
 parser.add_argument('--dnaA_hit_length_minimum', type=int, help='Minimum acceptable hit length to dnaA expressed as percentage of dnaA length [%(default)s]', default=95, metavar='INT')
-parser.add_argument('--reassembly_dir', type=int, help='Directory for reassembler program to put temp files in [%(default)s]', default='reassembly')
+parser.add_argument('--reassembly_dir', help='Directory for reassembler program to put temp files in [%(default)s]', default='reassembly')
 parser.add_argument('--debug', help="Keep all temp files", action='store_false')
 
 options = parser.parse_args()

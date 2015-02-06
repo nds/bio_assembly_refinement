@@ -49,6 +49,7 @@ class Main:
 				working_directory=None, 
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 
+				reassembly_dir = "reassembly",
 				debug = False
 				):
 		self.fasta_file = fasta_file 
@@ -63,6 +64,7 @@ class Main:
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum		 
 		self.pacbio_exec = pacbio_exec
 		self.nucmer_exec = nucmer_exec 
+		self.reassembly_dir = reassembly_dir
 		self.debug = debug   		
 
 		if not working_directory:
@@ -83,7 +85,7 @@ class Main:
 												debug = self.debug)
 		ccleaner.run()
 		
-		circulariser = circularisation.Circularisation(fasta_file = ccleaner.get_results_file(), # To retain file naming scheme
+		circulariser = circularisation.Circularisation(fasta_file = ccleaner.get_results_file(), # Need the filename to retain naming scheme even though we pass in pre-computed contigs
 													   dnaA_sequence = self.dnaA_sequence,
 													   working_directory = self.working_directory,
 													   contigs = ccleaner.get_filtered_contigs(),
@@ -97,20 +99,21 @@ class Main:
 												      )
 												      
 		circulariser.run()      
-												      
-
+				
+		 
 		reassembler = reassembly.Reassembly(input_file=circulariser.get_results_file(),
 											read_data=self.bax_files,
 											pacbio_exec=self.pacbio_exec,
 											working_directory = self.working_directory,
+											output_directory = self.reassembly_dir,
 											debug = self.debug
 											)
 											
 		reassembler.run()
 		
-		if not self.debug:
-			utils.delete(ccleaner.get_results_file())
-			utils.delete(circulariser.get_results_file())
+#		if not self.debug:
+#			utils.delete(ccleaner.get_results_file())
+#			utils.delete(circulariser.get_results_file())
 		
 		os.chdir(original_dir)
    		 

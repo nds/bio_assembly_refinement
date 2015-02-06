@@ -2,23 +2,25 @@
 
 import sys
 import argparse
-import bio_assembly_refinement
+from bio_assembly_refinement import main
 
 parser = argparse.ArgumentParser(
-    usage = '%(prog)s [options]',
+				description = 'Filter, trim, circularise and re-assemble bacterial assemblies',
+    			usage = '%(prog)s [options]',
 )
 
 parser.add_argument('fasta_file', help='Input fasta file', metavar='Input fasta file')
-parser.add_argument('dnaA', help='Fasta file with dnaA sequence', metavar='Fasta file with dnaA/refA/refB sequence')
+parser.add_argument('dnaA', help='Fasta file with dnaA sequence', metavar='dnaA/refA/refB sequence')
 parser.add_argument('bax_files', help='Directory with bax.h5 files', metavar='Directory with bax.h5 files')
 parser.add_argument('--min_contig_length', type=int, help='Minimum length of contigs [%(default)s]', default=10000, metavar='INT')
 parser.add_argument('--contained_percent_match', type=int, help='Percent match identity when determining if a contig is contained in another [%(default)s]', default=10000, metavar='INT')
-parser.add_argument('--overlap_offset', type=int, help='Offset from the ends where an overlap can be expressed as a % of contig length [%(default)s]', default=12, metavar='INT')
-parser.add_argument('--overlap_max_length', type=int, help='Maximum length of the overlap between ends expressed as % of contig length [%(default)s]', default=50, metavar='INT')
+parser.add_argument('--overlap_offset', type=int, help='Offset from the ends where an overlap can be expressed as a percentage of contig length [%(default)s]', default=12, metavar='INT')
+parser.add_argument('--overlap_max_length', type=int, help='Maximum length of the overlap between ends expressed as percentage of contig length [%(default)s]', default=50, metavar='INT')
 parser.add_argument('--overlap_percent_identity', type=int, help='Percent match identity when determining if ends of contig overlap [%(default)s]', default=99, metavar='INT')
-parser.add_argument('--dnaA_hit_percent_identity', type=int, help='Percent match identity when looking at hits to dnaA [%(default)s]', default=99, metavar='INT')
-parser.add_argument('--dnaA_hit_length_minimum', type=int, help=' Minimum acceptable hit length to dnaA expressed as % of dnaA length [%(default)s]', default=95, metavar='INT')
-parser.add_argument('--debug', help="Keep temp files", action='store_false')
+parser.add_argument('--dnaA_hit_percent_identity', type=int, help='Percent match identity when looking at hits to dnaA [%(default)s]', default=95, metavar='INT')
+parser.add_argument('--dnaA_hit_length_minimum', type=int, help='Minimum acceptable hit length to dnaA expressed as percentage of dnaA length [%(default)s]', default=95, metavar='INT')
+parser.add_argument('--reassembly_dir', help='Directory for reassembler program to put temp files in [%(default)s]', default='reassembly')
+parser.add_argument('--debug', help="Keep all temp files", action='store_false')
 
 options = parser.parse_args()
 
@@ -31,7 +33,8 @@ processor = main.Main(  fasta_file = options.fasta_file,
 						overlap_max_length = options.overlap_max_length, 
 						overlap_percent_identity = options.overlap_percent_identity,
 						dnaA_hit_percent_identity = options.dnaA_hit_percent_identity,
-						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,			
+						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,
+						reassembly_dir = options.reassembly_dir,			
 						debug = False
 						)
 						

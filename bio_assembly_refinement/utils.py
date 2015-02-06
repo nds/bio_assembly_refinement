@@ -30,6 +30,7 @@ def write_ids_to_file(ids, filename):
 	'''Write contig ids to a file'''
 	with open(filename, mode='wt') as ids_file:
 		ids_file.write('\n'.join(ids))
+	ids_file.close()
 	return filename
 
 	

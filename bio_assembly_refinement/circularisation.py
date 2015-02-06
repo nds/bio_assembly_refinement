@@ -37,7 +37,7 @@ Todo:
 
 import os
 import re
-from fastaq import tasks, sequences
+from pyfastaq import tasks, sequences
 from fastaq import utils as fastaqutils
 from pymummer import alignment
 from bio_assembly_refinement import utils
@@ -131,6 +131,7 @@ class Circularisation:
 		output_fw = fastaqutils.open_file_write(out_file)
 		for id in contig_ids:
 			print(sequences.Fasta(id, self.contigs[id]), file=output_fw)
+		output_fw.close()
 			
 			
 	def get_results_file(self):

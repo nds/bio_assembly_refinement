@@ -27,19 +27,12 @@ __2.	pacbio\_smrtanalysis RS\_sequencing__
 	
 [Installation instructions to be completed]
 
-__3.	fastaq__ 
+__3.	pyfastaq__ 
 	
-Fastaq is a python3 module to manipulate FASTA and FASTQ files. 
-
-Download it from [github](https://github.com/sanger-pathogens/Fastaq/releases) and unzip it
-	
-Run the tests (needs nose): 
-	
-	python3 setup.py test
 		
 Install: 
 	
-	python3 setup.py install
+	pip3 install pyfastaq
 		
 
 

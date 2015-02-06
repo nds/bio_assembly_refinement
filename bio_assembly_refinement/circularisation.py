@@ -38,7 +38,7 @@ Todo:
 import os
 import re
 from pyfastaq import tasks, sequences
-from fastaq import utils as fastaqutils
+from pyfastaq import utils as fastaqutils
 from pymummer import alignment
 from bio_assembly_refinement import utils
 

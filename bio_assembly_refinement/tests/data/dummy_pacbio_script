@@ -2,5 +2,5 @@
 
 if(not -d "reassembly") {
 	system("mkdir reassembly");
-	system("echo \"Dummy reassembled file\" > reassembly/consensus.fasta");
 }
+system("echo \"Dummy reassembled file\" > reassembly/consensus.fasta");

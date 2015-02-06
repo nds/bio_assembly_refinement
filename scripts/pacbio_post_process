@@ -33,7 +33,8 @@ processor = main.Main(  fasta_file = options.fasta_file,
 						overlap_max_length = options.overlap_max_length, 
 						overlap_percent_identity = options.overlap_percent_identity,
 						dnaA_hit_percent_identity = options.dnaA_hit_percent_identity,
-						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,			
+						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,
+						reassembly_dir = options.reassembly_dir,			
 						debug = False
 						)
 						

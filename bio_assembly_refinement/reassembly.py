@@ -22,8 +22,8 @@ reassembler.run()
 '''
 import os
 import shutil
-from fastaq import tasks, sequences
-from fastaq import utils as fastaqutils
+from pyfastaq import tasks, sequences
+from pyfastaq import utils as fastaqutils
 
 class Reassembly:
 	def __init__(self, 
@@ -72,6 +72,7 @@ class Reassembly:
 
 		# Move results file 
 		default_results_file = os.path.join(self.working_directory, self.output_directory, "consensus.fasta")
+		print(default_results_file)
 		if os.path.exists(default_results_file):
 			shutil.move(default_results_file, self.output_file)
 		

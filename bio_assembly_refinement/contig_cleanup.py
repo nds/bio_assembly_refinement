@@ -21,7 +21,7 @@ contigs_removed = ccleaner.get_filtered_contigs()
 '''
 
 import os
-from fastaq import tasks
+from pyfastaq import tasks
 from pymummer import alignment
 from bio_assembly_refinement import utils
 

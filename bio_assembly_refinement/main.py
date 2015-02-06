@@ -111,9 +111,9 @@ class Main:
 											
 		reassembler.run()
 		
-		if not self.debug:
-			utils.delete(ccleaner.get_results_file())
-			utils.delete(circulariser.get_results_file())
+#		if not self.debug:
+#			utils.delete(ccleaner.get_results_file())
+#			utils.delete(circulariser.get_results_file())
 		
 		os.chdir(original_dir)
    		 

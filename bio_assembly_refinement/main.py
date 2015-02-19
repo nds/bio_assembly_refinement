@@ -41,10 +41,11 @@ class Main:
 				bax_files,
 				cutoff_contig_length=10000,
 				contained_percent_match=95,
-				overlap_offset=12, 
-				overlap_max_length=50, 
-				overlap_percent_identity=99,
-				dnaA_hit_percent_identity=99,
+				overlap_offset=49, 
+				overlap_boundary_max=50, 
+				overlap_min_length=2000,
+				overlap_percent_identity=85,
+				dnaA_hit_percent_identity=80,
 				dnaA_hit_length_minimum=95,			
 				working_directory=None, 
 				pacbio_exec = "pacbio_smrtanalysis", 
@@ -58,7 +59,8 @@ class Main:
 		self.cutoff_contig_length = cutoff_contig_length
 		self.contained_percent_match = contained_percent_match
 		self.overlap_offset = overlap_offset 
-		self.overlap_max_length = overlap_max_length
+		self.overlap_boundary_max = overlap_boundary_max
+		self.overlap_min_length = overlap_min_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum		 
@@ -91,7 +93,8 @@ class Main:
 													   contigs = ccleaner.get_filtered_contigs(),
 												       alignments = ccleaner.get_alignments(),
 												       overlap_offset = self.overlap_offset,
-												       overlap_max_length = self.overlap_max_length,
+												       overlap_boundary_max = self.overlap_boundary_max,
+												       overlap_min_length = self.overlap_min_length,
 												       overlap_percent_identity = self.overlap_percent_identity,
 												       dnaA_hit_percent_identity = self.dnaA_hit_percent_identity,
 												       dnaA_hit_length_minimum = self.dnaA_hit_length_minimum,
@@ -111,9 +114,9 @@ class Main:
 											
 		reassembler.run()
 		
-#		if not self.debug:
-#			utils.delete(ccleaner.get_results_file())
-#			utils.delete(circulariser.get_results_file())
+		if not self.debug:
+			utils.delete(ccleaner.get_results_file())
+			utils.delete(circulariser.get_results_file())
 		
 		os.chdir(original_dir)
    		 

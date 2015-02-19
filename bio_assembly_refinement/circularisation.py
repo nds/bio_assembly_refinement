@@ -10,10 +10,11 @@ working_directory : path to working directory (default to current working direct
 contigs : dict of contigs (instead of fasta file)
 alignments : pre computed alignments
 dnaA_alignments : pre-computed alignments against dnaA (for testing)
-overlap_offset: offset from edge that the overlap can start expressed as a % of length (default 12)
-overlap_max_length : max length of overlap expressed as % of length of reference (default 50)
-overlap_percent_identity : percent identity of match between ends (default 99)
-dnaA_hit_percent_identity : percent identity of match to dnaA (default 99)
+overlap_offset: offset from edge that the overlap can start expressed as a % of length (default 49)
+overlap_boundary_max : max boundary of overlap expressed as % of length of reference (default 50)
+overlap_min_length : minimum length of overlap (default 2KB)
+overlap_percent_identity : percent identity of match between ends (default 85)
+dnaA_hit_percent_identity : percent identity of match to dnaA (default 80)
 dnaA_hit_length_minimum : minimum acceptable hit length to dnaA expressed as % (of dnaA length) (default 95) 
 debug : do not delete temp files if set to true (default false)
 			  
@@ -50,10 +51,11 @@ class Circularisation:
 				 contigs={},
 				 alignments=[],
 				 dnaA_alignments=[], # Can be used for testing 
-				 overlap_offset=12, 
-				 overlap_max_length=50, 
-				 overlap_percent_identity=99,
-				 dnaA_hit_percent_identity=99,
+				 overlap_offset=49, 
+				 overlap_boundary_max=50, 
+				 overlap_min_length=2000,
+				 overlap_percent_identity=85,
+				 dnaA_hit_percent_identity=80,
 				 dnaA_hit_length_minimum=95,			  
 				 debug=False):
 
@@ -67,7 +69,8 @@ class Circularisation:
 		self.alignments = alignments
 		self.dnaA_alignments = dnaA_alignments
 		self.overlap_offset = overlap_offset * 0.01
-		self.overlap_max_length = overlap_max_length * 0.01
+		self.overlap_boundary_max = overlap_boundary_max * 0.01
+		self.overlap_min_length = overlap_min_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
@@ -84,34 +87,34 @@ class Circularisation:
 		self.output_file = self._build_final_filename()
 		
 		
-	def _circularisable(self, contig_id):
-		''' Returns overlap_length/2 if the ends of a contig overlap '''
-		acceptable_offset = self.overlap_offset * len(self.contigs[contig_id])
-		
+	def _look_for_overlap_and_trim(self):
+		''' Look for overlap in contigs. If found, trim overlap/2 off the ends. Remember contig for circularisation process '''		
 # 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? Move check to pymummer?
-		for algn in self.alignments:			
-			if algn.qry_name == contig_id and \
-			   algn.ref_name == contig_id and \
-			   algn.ref_start < acceptable_offset and \
-			   algn.ref_end < (algn.ref_length * self.overlap_max_length) and \
-			   algn.qry_start > (algn.qry_length * self.overlap_max_length) and \
-			   algn.qry_end > (algn.qry_length - acceptable_offset) and \
-			   algn.percent_identity > self.overlap_percent_identity:
-				trim_value = round(algn.hit_length_ref/2) # We later trim half of overlap off ends
-				return trim_value
-		return None	
-		
-		
-	def _trim(self, contig_id, trim_value):
-		'''Trim the ends of given contig by trim value '''	
-		original_sequence = self.contigs[contig_id]
-		self.contigs[contig_id] = original_sequence[trim_value:len(original_sequence)-trim_value]  
+		circularisable_contigs = []
+		for contig_id in self.contigs.keys():
+			acceptable_offset = self.overlap_offset * len(self.contigs[contig_id])
+			boundary = self.overlap_boundary_max * len(self.contigs[contig_id])
+			for algn in self.alignments:			
+				if algn.qry_name == contig_id and \
+				   algn.ref_name == contig_id and \
+				   algn.ref_start < acceptable_offset and \
+				   algn.ref_end < boundary and \
+				   algn.qry_start > boundary and \
+				   algn.qry_end > (algn.qry_length - acceptable_offset) and \
+				   algn.hit_length_ref > self.overlap_min_length and \
+				   algn.percent_identity > self.overlap_percent_identity:
+					trim_value = round(algn.hit_length_ref/2)
+					original_sequence = self.contigs[contig_id]
+					self.contigs[contig_id] = original_sequence[trim_value:len(original_sequence)-trim_value]
+					circularisable_contigs.append(contig_id)		
+					break #Just find the biggest overlap from the end and skip any other hits
+		return circularisable_contigs  
 		
 		
 	def _circularise(self, contig_ids):
 		'''
 		Create a temporary multi FASTA file with circularisable contigs (choosing this as opposed to writing one contig to a file each time)
-		Run nucmer with dnaA/refA/refB sequences 
+		Run nucmer with dnaA sequences 
 		For each contig, circularise if possible
 		'''
 		
@@ -132,6 +135,10 @@ class Circularisation:
 		for id in contig_ids:
 			print(sequences.Fasta(id, self.contigs[id]), file=output_fw)
 		output_fw.close()
+			
+			
+	def get_contigs(self):
+		return self.contigs
 			
 			
 	def get_results_file(self):
@@ -160,19 +167,15 @@ class Circularisation:
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
 	
-		circularisable_contigs = []
-		for contig_id in self.contigs.keys():
-			trim_value = self._circularisable(contig_id)
-			if trim_value:
-				self._trim(contig_id, trim_value)
-				circularisable_contigs.append(contig_id)
-				
+		circularisable_contigs = self._look_for_overlap_and_trim()
+		
 		self._write_contigs_to_file(self.contigs, self._build_intermediate_filename()) # Write trimmed sequences to file
 		self._circularise(circularisable_contigs)
 								
 		# Write all contigs to a file, ordered by size of contig (re-think. should contigs be re-named ti indicate possible chromosomes/plasmids?)
 #		self._write_contigs_to_file(sorted(self.contigs, key=lambda id: len(self.contigs[id]), reverse=True), self.output_file)	
-		self._write_contigs_to_file(circularisable_contigs, self.output_file) # Only write circularised contigs
+		
+		self._write_contigs_to_file(circularisable_contigs, self.output_file) # Only write circularisable contigs (some will be chromosomes, some will be plasmids)
 		
 		if not self.debug:
 			utils.delete(self._build_dnaA_alignments_filename())

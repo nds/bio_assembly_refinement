@@ -17,7 +17,7 @@ class TestMain(unittest.TestCase):
 						       dnaA_sequence = test_dnaA_file,
 						       bax_files = data_dir,
 						       pacbio_exec=data_dir + "/dummy_pacbio_script",		
-						       debug = False				  
+						       debug = True				  
 						)
 		processor.process_assembly()
 		self.assertTrue(os.path.exists(output_file))

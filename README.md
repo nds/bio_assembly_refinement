@@ -1,4 +1,4 @@
-bio\_assembly\_refinement
+arebio\_assembly\_refinement
 =======================
 
 Modules to filter, circularise and re-assemble contigs, mostly useful for (but not limited to) bacterial assemblies
@@ -9,10 +9,10 @@ Description
 Given a fasta file, these modules can be used to:
 
 1. Filter out contigs smaller than a set length, and those completely contained within other contigs
-2. Identify contigs that can be circularised (by checking if their ends overlap). These contigs can then be trimmed and circularised, setting the site of the dnaA/refA/refB gene as the start
+2. Identify contigs that can be circularised (by checking if their ends overlap). These contigs are then trimmed and circularised (if possible), setting the site of the dnaA gene as the start
 3. Run pacbio smrtanalysis software on the new assembly to smooth out the new joins in the contigs
 
-Each step can be run individually, or as a collection. There is also a script that can be used to invoke this functionality on the command line
+There is also a script that can be used to invoke this functionality on the command line
 
 Installation
 ------------
@@ -62,13 +62,15 @@ Attributes of Main.py:
 
 **contained\_percent\_match**: minimum percent identity in nucmer hits to determine if contig is contained in another (default 95)
 
-**overlap\_offset**: offset from the ends of a contig where an overlap region can begin (expressed as % of length of contig) (default 12)
+**overlap\_offset**: offset from the ends of a contig where an overlap region can begin (expressed as % of length of contig) (default 49)
 
-**overlap\_max\_length**: maximum length of the overlap between ends (expressed as % of contig length) (default 50)
+**overlap\_boundary\_max**: maximum boundary of the overlap between ends (expressed as % of contig length) (default 50)
 
-**overlap\_percent\_identity**: minimum percent identity in nucmer hits to use when determining if ends overlap (default 99)
+**overlap\_min\_length**: minimum length of overlap (default 2000 bases)
 
-**dnaA\_hit\_percent\_identity**: minimum percent identity to consider when looking at hits to dnaA/refA/refB (default 99)
+**overlap\_percent\_identity**: minimum percent identity in nucmer hits to use when determining if ends overlap (default 85)
+
+**dnaA\_hit\_percent\_identity**: minimum percent identity to consider when looking at hits to dnaA/refA/refB (default 80)
 
 **dnaA\_hit\_length\_minimum**: minimum length of hit to dnaA/refA/refB expressed as % of length of dnaA/refA/refB (default 95)
 

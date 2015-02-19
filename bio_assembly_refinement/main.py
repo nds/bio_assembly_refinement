@@ -116,7 +116,7 @@ class Main:
 		
 		if not self.debug:
 			utils.delete(ccleaner.get_results_file())
-			utils.delete(circulariser.get_results_file())
+# 			utils.delete(circulariser.get_results_file()) #Only delete once code added to wait for bsub to finish
 		
 		os.chdir(original_dir)
    		 

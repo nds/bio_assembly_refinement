@@ -37,7 +37,7 @@ processor = main.Main(  fasta_file = options.fasta_file,
 						dnaA_hit_percent_identity = options.dnaA_hit_percent_identity,
 						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,
 						reassembly_dir = options.reassembly_dir,			
-						debug = options.add_argument
+						debug = options.debug
 						)
 						
 processor.process_assembly()

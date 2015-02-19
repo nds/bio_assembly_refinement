@@ -82,7 +82,7 @@ class Circularisation:
 			tasks.file_to_dict(self.fasta_file, self.contigs) 
 		
 		if not self.alignments:
-			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename())
+			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename(), min_percent_id=self.overlap_percent_identity)
 		
 		self.output_file = self._build_final_filename()
 		
@@ -119,7 +119,7 @@ class Circularisation:
 		'''
 		
 		if not self.dnaA_alignments:
-			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename())
+			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename(), min_percent_id=self.dnaA_hit_percent_identity)
 		 
 		for contig_id in contig_ids:			   		
 			for algn in self.dnaA_alignments:	
@@ -128,7 +128,7 @@ class Circularisation:
 				   algn.percent_identity > self.dnaA_hit_percent_identity:			       
 					trimmed_sequence = self.contigs[contig_id]
 					self.contigs[contig_id] = trimmed_sequence[algn.ref_start:] + trimmed_sequence[0:algn.ref_start] 
-					
+					break;
 	  
 	def _write_contigs_to_file(self, contig_ids, out_file):
 		output_fw = fastaqutils.open_file_write(out_file)

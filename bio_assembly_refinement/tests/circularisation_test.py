@@ -32,12 +32,10 @@ class TestCircularisation(unittest.TestCase):
 												       alignments = test_overlap_alignments,
 												       dnaA_alignments = test_dnaA_alignments,
 												       overlap_offset = 7,
+												       overlap_min_length=3,
 												       
 												      )
-		# Does circularisable check work?
-		self.assertTrue(circulariser._circularisable("contig1"))
-		self.assertFalse(circulariser._circularisable("contig2"))
-		# Does trim and circularise work?
+		# Does trim and circularise check work?
 		circulariser.run()
 		self.assertTrue(filecmp.cmp(actual_output, expected_output, shallow=False)) 
 		os.remove(actual_output)

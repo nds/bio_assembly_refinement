@@ -1,4 +1,4 @@
-arebio\_assembly\_refinement
+bio\_assembly\_refinement
 =======================
 
 Modules to filter, circularise and re-assemble contigs, mostly useful for (but not limited to) bacterial assemblies

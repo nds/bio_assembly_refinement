@@ -29,7 +29,7 @@ class ContigCleanup:
 	def __init__(self, 
 				 fasta_file, 
 				 working_directory=None, 
-				 cutoff_contig_length=10000, 
+				 cutoff_contig_length=2000, 
 				 percent_match=95, 
 				 debug=False):
 		''' Constructor '''

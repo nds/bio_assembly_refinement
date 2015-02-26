@@ -5,6 +5,7 @@ Helper functions like deleting files and running nucmer
 import os
 import sys
 from pymummer import coords_file, alignment, nucmer
+from pyfastaq import utils as fastaqutils, sequences
 
 class Error (Exception): pass
 
@@ -32,5 +33,32 @@ def write_ids_to_file(ids, filename):
 		ids_file.write('\n'.join(ids))
 	ids_file.close()
 	return filename
+	
+	
+def run_prodigal_and_get_start_of_a_gene(sequence):
+	# Write plasmid to a file
+	# Run prodigal
+	# Return a gene start location (first, or middle?)
+	# Delete plasmid file and the gff file output by prodigal
+	
+	output_fw = fastaqutils.open_file_write("tmp_seq.fa")
+	print(sequences.Fasta("contig", sequence), file=output_fw)
+	output_fw.close()
+	fastaqutils.syscall("prodigal -i tmp_seq.fa -o tmp_genes.gff -f gff -c")
+	
+	boundary_start = round(0.3 * length(sequence)) # Look for a gene that starts after 30% of the sequence length
+	gene_start = 0
+	
+	fh = pyfastaq.utils.open_file_read('tmp_genes.gff')
+	for line in fh:
+		columns = line.split('\t')
+		if columns[3] > boundary_start:
+			gene_start = columns[3] - 1 #Interbase
+			break;    		
+	delete('tmp_genes.gff')
+	delete('tmp_seq.fa')
+	return gene_start		
+    	
+	
 
 	

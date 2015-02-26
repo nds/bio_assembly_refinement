@@ -147,6 +147,9 @@ class Circularisation:
 					
 			if plasmid:
 				# Choose random gene in plasmid, and circularise
+				gene_start = utils.run_prodigal_and_get_start_of_a_gene(self.contigs[contig_id])
+				if gene_start:
+					self.contigs[contig_id] = trimmed_sequence[gene_start:] + trimmed_sequence[0:gene_start]	
 				names_map[contig_id] = 'plasmid' + str(plasmid_count)
 				plasmid_count += 1
 				

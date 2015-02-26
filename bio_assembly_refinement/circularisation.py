@@ -31,8 +31,7 @@ Todo:
 -----
 1. Consider looking for and removing adaptor sequences for all contigs before circularising
 2. Consider running promer to find dnaA as it may be more conserved at the protein level than at the sequence level
-3. Extend logic to encompass edge cases (current version only handles very basic, straight forward cases)
-
+3. Extend logic to encompass more edge cases 
 
 '''
 
@@ -88,52 +87,80 @@ class Circularisation:
 		
 		
 	def _look_for_overlap_and_trim(self):
-		''' Look for overlap in contigs. If found, trim overlap/2 off the ends. Remember contig for circularisation process '''		
+		''' Look for overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
 # 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? Move check to pymummer?
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
 			acceptable_offset = self.overlap_offset * len(self.contigs[contig_id])
 			boundary = self.overlap_boundary_max * len(self.contigs[contig_id])
-			for algn in self.alignments:			
+			for algn in self.alignments:	
 				if algn.qry_name == contig_id and \
 				   algn.ref_name == contig_id and \
 				   algn.ref_start < acceptable_offset and \
 				   algn.ref_end < boundary and \
-				   algn.qry_start > boundary and \
-				   algn.qry_end > (algn.qry_length - acceptable_offset) and \
+				   algn.qry_end > boundary and \
+				   algn.qry_start > (algn.qry_length - acceptable_offset) and \
 				   algn.hit_length_ref > self.overlap_min_length and \
 				   algn.percent_identity > self.overlap_percent_identity:
-					trim_value = round(algn.hit_length_ref/2)
 					original_sequence = self.contigs[contig_id]
-					self.contigs[contig_id] = original_sequence[trim_value:len(original_sequence)-trim_value]
-					circularisable_contigs.append(contig_id)		
+					self.contigs[contig_id] = original_sequence[algn.ref_end+1:algn.qry_start+1]
+					circularisable_contigs.append(contig_id)
 					break #Just find the biggest overlap from the end and skip any other hits
 		return circularisable_contigs  
 		
 		
-	def _circularise(self, contig_ids):
+	def _circularise_and_rename(self, contig_ids):
 		'''
-		Create a temporary multi FASTA file with circularisable contigs (choosing this as opposed to writing one contig to a file each time)
+		Create a temporary multi FASTA file with circularisable contigs 
 		Run nucmer with dnaA sequences 
-		For each contig, circularise if possible
-		'''
-		
+		For each contig, circularise (either to start at dnaA or a random gene in the case of plasmids)
+		Create a new name for the contigs
+		'''		
 		if not self.dnaA_alignments:
 			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename(), min_percent_id=self.dnaA_hit_percent_identity)
+		
+		names_map = dict()
+		plasmid_count = 1
+		chromosome_count = 1
+		contig_ids.sort()
 		 
-		for contig_id in contig_ids:			   		
+		for contig_id in contig_ids:
+			plasmid = True		   		
 			for algn in self.dnaA_alignments:	
 				if algn.ref_name == contig_id and \
 				   algn.hit_length_ref > (self.dnaA_hit_length_minimum * algn.qry_length) and \
-				   algn.percent_identity > self.dnaA_hit_percent_identity:			       
+				   algn.percent_identity > self.dnaA_hit_percent_identity:	     
 					trimmed_sequence = self.contigs[contig_id]
-					self.contigs[contig_id] = trimmed_sequence[algn.ref_start:] + trimmed_sequence[0:algn.ref_start] 
+					plasmid = False
+					
+					if algn.on_same_strand():
+						break_point = algn.ref_start						
+					else:
+						# Reverse complement sequence, circularise using new start of dnaA in the right orientation
+						trimmed_sequence = trimmed_sequence.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
+						break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
+
+					self.contigs[contig_id] = trimmed_sequence[break_point:] + trimmed_sequence[0:break_point]		
+					names_map[contig_id] = 'chromosome' + str(chromosome_count)
+					chromosome_count += 1		
 					break;
-	  
-	def _write_contigs_to_file(self, contig_ids, out_file):
+					
+			if plasmid:
+				# Choose random gene in plasmid, and circularise
+				names_map[contig_id] = 'plasmid' + str(plasmid_count)
+				plasmid_count += 1
+				
+		return names_map
+		
+
+	def _write_contigs_to_file(self, contig_ids, out_file, new_names_map=None):
 		output_fw = fastaqutils.open_file_write(out_file)
 		for id in contig_ids:
-			print(sequences.Fasta(id, self.contigs[id]), file=output_fw)
+			if new_names_map:
+				contig_name = new_names_map[id]
+			else:
+				contig_name = id
+			print(sequences.Fasta(contig_name, self.contigs[id]), file=output_fw)
 		output_fw.close()
 			
 			
@@ -157,6 +184,10 @@ class Circularisation:
 		return os.path.join(self.working_directory, "trimmed.fa")
 		
 			
+	def _build_unsorted_circularised_filename(self):
+		input_filename = os.path.basename(self.fasta_file)
+		return os.path.join(self.working_directory, "unsorted_circularised_" + input_filename)	
+		
 	def _build_final_filename(self):
 		input_filename = os.path.basename(self.fasta_file)
 		return os.path.join(self.working_directory, "circularised_" + input_filename)	
@@ -165,21 +196,17 @@ class Circularisation:
 	def run(self):
 	
 		original_dir = os.getcwd()
-		os.chdir(self.working_directory)
-	
-		circularisable_contigs = self._look_for_overlap_and_trim()
-		
+		os.chdir(self.working_directory)	
+		circularisable_contigs = self._look_for_overlap_and_trim()		
 		self._write_contigs_to_file(self.contigs, self._build_intermediate_filename()) # Write trimmed sequences to file
-		self._circularise(circularisable_contigs)
-								
-		# Write all contigs to a file, ordered by size of contig (re-think. should contigs be re-named ti indicate possible chromosomes/plasmids?)
-#		self._write_contigs_to_file(sorted(self.contigs, key=lambda id: len(self.contigs[id]), reverse=True), self.output_file)	
-		
-		self._write_contigs_to_file(circularisable_contigs, self.output_file) # Only write circularisable contigs (some will be chromosomes, some will be plasmids)
+		new_names = self._circularise_and_rename(circularisable_contigs)									
+		self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename(), new_names_map=new_names) # Write circularisable contigs to new file
+		tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
 		
 		if not self.debug:
 			utils.delete(self._build_dnaA_alignments_filename())
 			utils.delete(self._build_alignments_filename())
 			utils.delete(self._build_intermediate_filename())
+			utils.delete(self._build_unsorted_circularised_filename())
 		
 		os.chdir(original_dir)

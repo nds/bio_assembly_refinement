@@ -147,7 +147,7 @@ class Circularisation:
 					
 			if plasmid:
 				# Choose random gene in plasmid, and circularise
-				if length(self.contigs[contig_id]) > 20000:
+				if len(self.contigs[contig_id]) > 20000:
 					gene_start = utils.run_prodigal_and_get_start_of_a_gene(self.contigs[contig_id])
 					print("Start of random gene for " + contig_id + " is " + gene_start)
 					if gene_start:

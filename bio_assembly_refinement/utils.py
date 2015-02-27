@@ -35,6 +35,14 @@ def write_ids_to_file(ids, filename):
 	return filename
 	
 	
+def write_text_to_file(text, filename):
+	'''Write text to file'''
+	with open(filename, mode='wt') as text_file:
+		text_file.write(text)
+	text_file.close()
+	return filename
+	
+	
 def run_prodigal_and_get_start_of_a_gene(sequence):
 	# Write plasmid to a file
 	# Run prodigal

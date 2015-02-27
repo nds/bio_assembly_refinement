@@ -24,6 +24,7 @@ import os
 import shutil
 from pyfastaq import tasks, sequences
 from pyfastaq import utils as fastaqutils
+from bio_assembly_refinement import utils
 
 class Reassembly:
 	def __init__(self, 
@@ -32,6 +33,7 @@ class Reassembly:
 				 output_directory="reassembly",
 				 pacbio_exec="pacbio_smrtanalysis",				 
 				 working_directory=None,
+				 summary_file="smrtanalysis_summary.txt",
 				 debug=False
 				 ):
 				 
@@ -40,9 +42,8 @@ class Reassembly:
 		self.read_data = read_data
 		self.output_directory = output_directory
 		self.pacbio_exec = pacbio_exec
-		self.working_directory = working_directory		
-		if not self.working_directory:
-			self.working_directory = os.getcwd()		
+		self.working_directory = working_directory if working_directory else os.getcwd()
+		self.summary_file = summary_file 			
 		self.debug = debug
 		self.output_file = self._build_final_filename()
 		
@@ -50,10 +51,12 @@ class Reassembly:
 	def _build_final_filename(self):
 		input_filename = os.path.basename(self.input_file)
 		return os.path.join(self.working_directory, "reassembled_" + input_filename)	
-	
 		
-	def get_results_file(self):
-		return self.output_file
+		
+	def _produce_summary(self, command):
+		'''Generate summary text and write to summary file'''
+		text = "~~smrtanalysis command~~ \n" + command + "\n"	
+		utils.write_text_to_file(text, self.summary_file)
 		
 		
 	def run(self):
@@ -72,12 +75,11 @@ class Reassembly:
 
 		# Move results file 
 		default_results_file = os.path.join(self.working_directory, self.output_directory, "consensus.fasta")
-		print(default_results_file)
+
+		# TODO: Make it wait for bsub to finish before moving results file and delete reassembly folder
 		if os.path.exists(default_results_file):
-			shutil.move(default_results_file, self.output_file)
-		
-#		if (not self.debug) and os.path.isdir(self.output_directory):
-#			shutil.rmtree(self.output_directory)
+ 			shutil.move(default_results_file, self.output_file)
 			
+		self._produce_summary(command)
 		os.chdir(original_dir)
 		

@@ -64,7 +64,7 @@ class TestCircularisation(unittest.TestCase):
 												      )
 	
 		circulariser.run()
-		output_contigs = circulariser.get_contigs()
+		output_contigs = circulariser.contigs
 		
 				
 # 		self.assertTrue(filecmp.cmp(actual_output, expected_output, shallow=False)) 

@@ -40,7 +40,7 @@ import re
 from pyfastaq import tasks, sequences
 from pyfastaq import utils as fastaqutils
 from pymummer import alignment
-from bio_assembly_refinement import utils
+from bio_assembly_refinement import utils, contig_history
 
 class Circularisation:
 	def __init__(self, 
@@ -55,15 +55,14 @@ class Circularisation:
 				 overlap_min_length=2000,
 				 overlap_percent_identity=85,
 				 dnaA_hit_percent_identity=80,
-				 dnaA_hit_length_minimum=95,			  
+				 dnaA_hit_length_minimum=95,
+				 summary_file = "circularisation_summary_file.txt",			  
 				 debug=False):
 
 		''' Constructor '''
 		self.dnaA_sequence = dnaA_sequence
 		self.fasta_file = fasta_file
-		self.working_directory = working_directory		
-		if not self.working_directory:
-			self.working_directory = os.getcwd()		
+		self.working_directory = working_directory if working_directory else os.getcwd()		
 		self.contigs = contigs
 		self.alignments = alignments
 		self.dnaA_alignments = dnaA_alignments
@@ -73,12 +72,18 @@ class Circularisation:
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
+		self.summary_file = summary_file
 		self.debug = debug
 		
 		# Extract contigs and generate nucmer hits if not provided
 		if not self.contigs:
 			self.contigs = {}
 			tasks.file_to_dict(self.fasta_file, self.contigs) 
+			
+		# Keep track of what we do to contigs for the summary file	
+		self.contig_histories = {}
+		for id in self.contigs.keys():
+			self.contig_histories[id] = contig_history.ContigHistory(original_id = id, original_length = len(self.contigs[id]))
 		
 		if not self.alignments:
 			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename(), min_percent_id=self.overlap_percent_identity)
@@ -104,8 +109,9 @@ class Circularisation:
 				   algn.percent_identity > self.overlap_percent_identity:
 					original_sequence = self.contigs[contig_id]
 					self.contigs[contig_id] = original_sequence[algn.ref_end+1:algn.qry_start+1]
+					(self.contig_histories[contig_id]).overlap_length = algn.hit_length_ref
 					circularisable_contigs.append(contig_id)
-					break #Just find the biggest overlap from the end and skip any other hits
+					break #Just find one suitable overlap and skip any other hits
 		return circularisable_contigs  
 		
 		
@@ -139,9 +145,13 @@ class Circularisation:
 						# Reverse complement sequence, circularise using new start of dnaA in the right orientation
 						trimmed_sequence = trimmed_sequence.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
 						break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
+						(self.contig_histories[contig_id]).dnaA_on_reverse_strand = True
 
 					self.contigs[contig_id] = trimmed_sequence[break_point:] + trimmed_sequence[0:break_point]		
 					names_map[contig_id] = 'chromosome' + str(chromosome_count)
+					# Record history
+					(self.contig_histories[contig_id]).new_name = 'chromosome' + str(chromosome_count)
+					(self.contig_histories[contig_id]).location_of_dnaA = str(algn.ref_start) + "-" + str(algn.ref_end)
 					chromosome_count += 1		
 					break;
 					
@@ -149,10 +159,11 @@ class Circularisation:
 				# Choose random gene in plasmid, and circularise
 				if len(self.contigs[contig_id]) > 20000:
 					gene_start = utils.run_prodigal_and_get_start_of_a_gene(self.contigs[contig_id])
-					print("Start of random gene for " + contig_id + " is " + gene_start)
 					if gene_start:
 						self.contigs[contig_id] = trimmed_sequence[gene_start:] + trimmed_sequence[0:gene_start]	
+						(self.contig_histories[contig_id]).location_of_gene_on_plasmid = gene_start
 				names_map[contig_id] = 'plasmid' + str(plasmid_count)
+				(self.contig_histories[contig_id]).new_name = 'plasmid' + str(plasmid_count)
 				plasmid_count += 1
 				
 		return names_map
@@ -167,14 +178,18 @@ class Circularisation:
 				contig_name = id
 			print(sequences.Fasta(contig_name, self.contigs[id]), file=output_fw)
 		output_fw.close()
-			
-			
-	def get_contigs(self):
-		return self.contigs
-			
-			
-	def get_results_file(self):
-		return self.output_file
+	
+		
+	def _produce_summary(self):
+		'''Generate summary text and write to summary file'''
+		text = 	'~~Circularisation~~\n'
+		for id in self.contig_histories.keys():
+			history = self.contig_histories[id]
+			if history.overlap_length > 0:
+				text += history.pretty_text()
+			else:
+				text += "Contig: " + id + " (Unable to circularise) \n"		 
+		utils.write_text_to_file(text, self.summary_file)
 		
 			
 	def _build_alignments_filename(self):
@@ -207,6 +222,8 @@ class Circularisation:
 		new_names = self._circularise_and_rename(circularisable_contigs)									
 		self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename(), new_names_map=new_names) # Write circularisable contigs to new file
 		tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
+		
+		self._produce_summary()
 		
 		if not self.debug:
 			utils.delete(self._build_dnaA_alignments_filename())

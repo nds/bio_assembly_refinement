@@ -1,5 +1,6 @@
 import unittest
 import os
+import shutil
 from bio_assembly_refinement import reassembly 
 
 modules_dir = os.path.dirname(os.path.abspath(reassembly.__file__))
@@ -10,7 +11,8 @@ class TestReassembly(unittest.TestCase):
 		'''Test reassembly'''
 		
 		test_file = os.path.join(data_dir, "test_fasta_file.fa")
-		actual_output = os.path.join(os.getcwd(), 'reassembled_test_fasta_file.fa')
+		output_file = os.path.join(os.getcwd(), 'reassembled_test_fasta_file.fa')
+		summary_file = os.path.join(os.getcwd(), "smrtanalysis_summary.txt")
 		
 		reassembler = reassembly.Reassembly(input_file=test_file,
 											read_data=data_dir,
@@ -20,7 +22,12 @@ class TestReassembly(unittest.TestCase):
 		
 		reassembler.run()
 		
-		self.assertTrue(os.path.exists(actual_output))
-		os.remove(actual_output)
+		self.assertTrue(os.path.exists(output_file))
+		self.assertTrue(os.path.exists(summary_file))
+		
+		os.remove(output_file)
+		os.remove(summary_file)
+		shutil.rmtree('reassembly')
+
 		
 		

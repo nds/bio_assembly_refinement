@@ -12,6 +12,7 @@ class TestContigCleanup(unittest.TestCase):
 		'''Test steps of contig cleanup '''
 		input_file = os.path.join(data_dir, 'test_fasta_file.fa')
 		output_file = os.path.join(os.getcwd(), 'filtered_test_fasta_file.fa')
+		summary_file = os.path.join(os.getcwd(), 'contig_filtration_summary.txt')
 		
 		# Expected values
 		small_contigs = ['TEST_CONTIG_0']
@@ -24,6 +25,7 @@ class TestContigCleanup(unittest.TestCase):
 		]
 		expected_alignments = [alignment.Alignment(coord) for coord in expected_coords]
 		expected_filtered_file = os.path.join(data_dir, 'test_fasta_file_filtered.fa')
+		expected_summary_file = os.path.join(data_dir, 'filtration_summary_file.txt')
 				
 		ccleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=6)
 		self.assertEqual(ccleaner._find_small_contigs(), small_contigs) 
@@ -31,6 +33,8 @@ class TestContigCleanup(unittest.TestCase):
 		ccleaner.run()
 		self.assertTrue(os.path.isfile(output_file))# Does output file exist and is it named right? 
 		self.assertTrue(filecmp.cmp(output_file, expected_filtered_file, shallow=False)) 
+		self.assertTrue(os.path.isfile(summary_file))# Does summary file exist?
+
 		os.remove(output_file)
-		
+		os.remove(summary_file)
 

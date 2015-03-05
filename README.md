@@ -9,8 +9,8 @@ Description
 Given a fasta file, these modules can be used to:
 
 1. Filter out contigs smaller than a set length, and those completely contained within other contigs
-2. Identify contigs that can be circularised (by checking if their ends overlap). These contigs are then trimmed and circularised (if possible), setting the site of the dnaA gene as the start
-3. Run pacbio smrtanalysis software on the new assembly to smooth out the new joins in the contigs
+2. Circularise contigs by trimming overlaps and setting the start of the conserved dnaA gene (or other genes in the case of plasmids) as the start of the sequence
+3. Run quiver (pacbio_smrtanalysis script) on the new circularised contigs to refine them, particularly around the new joins
 
 There is also a script that can be used to invoke this functionality on the command line
 
@@ -28,12 +28,14 @@ __2.	pacbio\_smrtanalysis RS\_sequencing__
 [Installation instructions to be completed]
 
 __3.	pyfastaq__ 
-	
 		
 Install: 
 	
 	pip3 install pyfastaq
 		
+__4.	prodigal__ 
+		
+PRODIGAL gene finding software. [Installation instructions](https://github.com/hyattpd/prodigal/wiki/Installation) for PRODIGAL 
 
 
 Usage (for developers)
@@ -79,6 +81,10 @@ Attributes of Main.py:
 **pacbio\_exec**: pacbio resequencing exec (default pacbio_smrtanalysis) 
 
 **nucmer\_exec**: nucmer exec (default nucmer) 
+
+**reassembly\_dir**: directory sent to quiver (default reassembly)
+
+**summary\_file**: summary file (default pacbio\_postprocess\_summary.txt) 
 
 **debug**: do not delete temp files if set to true (default false)
 

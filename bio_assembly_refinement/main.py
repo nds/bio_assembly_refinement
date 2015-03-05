@@ -9,13 +9,16 @@ bax_files : directory containing bax.h5 files
 cutoff_contig_length : minimum contig length considered
 contained_percent_match : percent identity to determine if contig is contained in another
 overlap_offset : offset from the ends where an overlap can begin
-overlap_max_length : maximum length of the overlap between ends
+overlap_boundary_max : max boundary of overlap expressed as % of length of reference (default 50)
+overlap_min_length : minimum length of overlap (default 2KB)
 overlap_percent_identity : percent identity to use when determining if ends overlap
 dnaA_hit_percent_identity : percent identity to use when looking at hits to dnaA
 dnaA_hit_length_minimum : minimum length of hit to dnaA
 working_directory : working directory (default current working directory) 
 pacbio_exec : pacbio resequencing exec (default pacbio_smrtanalysis) 
 nucmer_exec : nucmer exec (default nucmer) 
+reassembly_dir : directory sent to quiver (default reassembly)
+summary_file :  summary file (default pacbio_postprocess_summary.txt)
 debug : do not delete temp files if set to true (default false)
 
 Sample usage:
@@ -51,6 +54,7 @@ class Main:
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 
 				reassembly_dir = "reassembly",
+				summary_file = "pacbio_postprocess_summary.txt",
 				debug = False
 				):
 		self.fasta_file = fasta_file 
@@ -63,15 +67,13 @@ class Main:
 		self.overlap_min_length = overlap_min_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
-		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum		 
+		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
+		self.working_directory = working_directory if working_directory else os.getcwd()	 
 		self.pacbio_exec = pacbio_exec
 		self.nucmer_exec = nucmer_exec 
 		self.reassembly_dir = reassembly_dir
+		self.summary_file = summary_file
 		self.debug = debug   		
-
-		if not working_directory:
-			self.working_directory = os.getcwd()		
-		
 
 
 	def process_assembly(self):
@@ -84,39 +86,42 @@ class Main:
 												working_directory = self.working_directory, 
 												cutoff_contig_length=self.cutoff_contig_length,
 												percent_match = self.contained_percent_match,
+												summary_file = self.summary_file,
 												debug = self.debug)
 		ccleaner.run()
 		
-		circulariser = circularisation.Circularisation(fasta_file = ccleaner.get_results_file(), # Need the filename to retain naming scheme even though we pass in pre-computed contigs
+		circulariser = circularisation.Circularisation(fasta_file = ccleaner.output_file, # Need the filename to retain naming scheme even though we pass in pre-computed contigs
 													   dnaA_sequence = self.dnaA_sequence,
 													   working_directory = self.working_directory,
-													   contigs = ccleaner.get_filtered_contigs(),
-												       alignments = ccleaner.get_alignments(),
+													   contigs = ccleaner.filtered_contigs,
+												       alignments = ccleaner.alignments,
 												       overlap_offset = self.overlap_offset,
 												       overlap_boundary_max = self.overlap_boundary_max,
 												       overlap_min_length = self.overlap_min_length,
 												       overlap_percent_identity = self.overlap_percent_identity,
 												       dnaA_hit_percent_identity = self.dnaA_hit_percent_identity,
 												       dnaA_hit_length_minimum = self.dnaA_hit_length_minimum,
+												       summary_file = self.summary_file,
 													   debug = self.debug
 												      )
 												      
 		circulariser.run()      
 				
 		 
-		reassembler = reassembly.Reassembly(input_file=circulariser.get_results_file(),
+		reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
 											read_data=self.bax_files,
 											pacbio_exec=self.pacbio_exec,
 											working_directory = self.working_directory,
 											output_directory = self.reassembly_dir,
+											summary_file = self.summary_file,
 											debug = self.debug
 											)
 											
 		reassembler.run()
 		
 		if not self.debug:
-			utils.delete(ccleaner.get_results_file())
-			utils.delete(circulariser.get_results_file())
+			utils.delete(ccleaner.output_file)
+# 			utils.delete(circulariser.get_results_file()) #Only delete once code added to wait for bsub to finish
 		
 		os.chdir(original_dir)
    		 

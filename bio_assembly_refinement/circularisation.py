@@ -16,6 +16,7 @@ overlap_min_length : minimum length of overlap (default 2KB)
 overlap_percent_identity : percent identity of match between ends (default 85)
 dnaA_hit_percent_identity : percent identity of match to dnaA (default 80)
 dnaA_hit_length_minimum : minimum acceptable hit length to dnaA expressed as % (of dnaA length) (default 95) 
+summary_file :  summary file (default circularisation_summary_file.txt)
 debug : do not delete temp files if set to true (default false)
 			  
 Sample usage:
@@ -73,6 +74,7 @@ class Circularisation:
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
 		self.summary_file = summary_file
+		self.output_file = self._build_final_filename()
 		self.debug = debug
 		
 		# Extract contigs and generate nucmer hits if not provided
@@ -85,10 +87,9 @@ class Circularisation:
 		for id in self.contigs.keys():
 			self.contig_histories[id] = contig_history.ContigHistory(original_id = id, original_length = len(self.contigs[id]))
 		
+		# Run nucmer
 		if not self.alignments:
 			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename(), min_percent_id=self.overlap_percent_identity)
-		
-		self.output_file = self._build_final_filename()
 		
 		
 	def _look_for_overlap_and_trim(self):
@@ -111,7 +112,7 @@ class Circularisation:
 					self.contigs[contig_id] = original_sequence[algn.ref_end+1:algn.qry_start+1]
 					(self.contig_histories[contig_id]).overlap_length = algn.hit_length_ref
 					circularisable_contigs.append(contig_id)
-					break #Just find one suitable overlap and skip any other hits
+					break #Just find one suitable overlap and skip other hits
 		return circularisable_contigs  
 		
 		
@@ -125,7 +126,6 @@ class Circularisation:
 		if not self.dnaA_alignments:
 			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename(), min_percent_id=self.dnaA_hit_percent_identity)
 		
-		names_map = dict()
 		plasmid_count = 1
 		chromosome_count = 1
 		contig_ids.sort()
@@ -148,7 +148,6 @@ class Circularisation:
 						(self.contig_histories[contig_id]).dnaA_on_reverse_strand = True
 
 					self.contigs[contig_id] = trimmed_sequence[break_point:] + trimmed_sequence[0:break_point]		
-					names_map[contig_id] = 'chromosome' + str(chromosome_count)
 					# Record history
 					(self.contig_histories[contig_id]).new_name = 'chromosome' + str(chromosome_count)
 					(self.contig_histories[contig_id]).location_of_dnaA = str(algn.ref_start) + "-" + str(algn.ref_end)
@@ -162,20 +161,15 @@ class Circularisation:
 					if gene_start:
 						self.contigs[contig_id] = trimmed_sequence[gene_start:] + trimmed_sequence[0:gene_start]	
 						(self.contig_histories[contig_id]).location_of_gene_on_plasmid = gene_start
-				names_map[contig_id] = 'plasmid' + str(plasmid_count)
 				(self.contig_histories[contig_id]).new_name = 'plasmid' + str(plasmid_count)
 				plasmid_count += 1
-				
-		return names_map
 		
 
-	def _write_contigs_to_file(self, contig_ids, out_file, new_names_map=None):
+	def _write_contigs_to_file(self, contig_ids, out_file):
 		output_fw = fastaqutils.open_file_write(out_file)
 		for id in contig_ids:
-			if new_names_map:
-				contig_name = new_names_map[id]
-			else:
-				contig_name = id
+			new_name = (self.contig_histories[id]).new_name
+			contig_name = new_name if new_name else id
 			print(sequences.Fasta(contig_name, self.contigs[id]), file=output_fw)
 		output_fw.close()
 	
@@ -208,19 +202,19 @@ class Circularisation:
 		input_filename = os.path.basename(self.fasta_file)
 		return os.path.join(self.working_directory, "unsorted_circularised_" + input_filename)	
 		
+		
 	def _build_final_filename(self):
 		input_filename = os.path.basename(self.fasta_file)
 		return os.path.join(self.working_directory, "circularised_" + input_filename)	
 			   
 			   
-	def run(self):
-	
+	def run(self):	
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)	
 		circularisable_contigs = self._look_for_overlap_and_trim()		
 		self._write_contigs_to_file(self.contigs, self._build_intermediate_filename()) # Write trimmed sequences to file
-		new_names = self._circularise_and_rename(circularisable_contigs)									
-		self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename(), new_names_map=new_names) # Write circularisable contigs to new file
+		self._circularise_and_rename(circularisable_contigs)									
+		self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename()) # Write circularisable contigs to new file
 		tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
 		
 		self._produce_summary()

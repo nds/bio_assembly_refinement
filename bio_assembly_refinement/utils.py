@@ -36,8 +36,8 @@ def write_ids_to_file(ids, filename):
 	
 	
 def write_text_to_file(text, filename):
-	'''Write text to file'''
-	with open(filename, mode='wt') as text_file:
+	'''Append text to file'''
+	with open(filename, mode='a') as text_file:
 		text_file.write(text)
 	text_file.close()
 	return filename

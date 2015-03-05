@@ -53,6 +53,7 @@ class TestCircularisation(unittest.TestCase):
 		# Output data
 		expected_output = os.path.join(data_dir, "circularised_test_contigs.fa")
 		actual_output = os.path.join(os.getcwd(), "circularised_file.fa")
+		summary_file = os.path.join(os.getcwd(), 'circularisation_summary_file.txt')
 	   	
 		circulariser = circularisation.Circularisation(dnaA_sequence = test_dnaA_file,
 													   contigs=test_contigs,
@@ -72,18 +73,21 @@ class TestCircularisation(unittest.TestCase):
 		
 		for id in circularised_contigs.keys():
 			self.assertEqual(circularised_contigs[id], output_contigs[id])
-
-
 		self.assertTrue(os.path.isfile(actual_output))# Does output file exist and is it named right? 
+		self.assertTrue(os.path.isfile(summary_file))# Does summary file exist and is it named right? 
 		os.remove(actual_output)
+		os.remove(summary_file)
 		
 		
 	def test_circularisation_with_fasta_file(self):	
 		# Does constructor take fasta file?
 		input_file = os.path.join(data_dir, "Salmonella_pacbio_unitig_0.fa")
 		dnaA_file = os.path.join(data_dir, "dnaA.fa")
-		output_file = os.path.join(os.getcwd(), "circularised_Salmonella_pacbio_unitig_0.fa")		
+		output_file = os.path.join(os.getcwd(), "circularised_Salmonella_pacbio_unitig_0.fa")	
+		summary_file = os.path.join(os.getcwd(), 'circularisation_summary_file.txt')	
 		circulariser = circularisation.Circularisation(dnaA_sequence = dnaA_file, fasta_file=input_file)
 		circulariser.run()
 		self.assertTrue(os.path.isfile(output_file))# Does output file exist and is it named right? 
+		self.assertTrue(os.path.isfile(summary_file))# Does summary file exist and is it named right? 
 		os.remove(output_file)
+		os.remove(circulariser.summary_file)

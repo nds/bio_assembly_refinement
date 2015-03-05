@@ -9,13 +9,16 @@ bax_files : directory containing bax.h5 files
 cutoff_contig_length : minimum contig length considered
 contained_percent_match : percent identity to determine if contig is contained in another
 overlap_offset : offset from the ends where an overlap can begin
-overlap_max_length : maximum length of the overlap between ends
+overlap_boundary_max : max boundary of overlap expressed as % of length of reference (default 50)
+overlap_min_length : minimum length of overlap (default 2KB)
 overlap_percent_identity : percent identity to use when determining if ends overlap
 dnaA_hit_percent_identity : percent identity to use when looking at hits to dnaA
 dnaA_hit_length_minimum : minimum length of hit to dnaA
 working_directory : working directory (default current working directory) 
 pacbio_exec : pacbio resequencing exec (default pacbio_smrtanalysis) 
 nucmer_exec : nucmer exec (default nucmer) 
+reassembly_dir : directory sent to quiver (default reassembly)
+summary_file :  summary file (default pacbio_postprocess_summary.txt)
 debug : do not delete temp files if set to true (default false)
 
 Sample usage:
@@ -117,7 +120,7 @@ class Main:
 		reassembler.run()
 		
 		if not self.debug:
-			utils.delete(ccleaner.get_results_file())
+			utils.delete(ccleaner.output_file)
 # 			utils.delete(circulariser.get_results_file()) #Only delete once code added to wait for bsub to finish
 		
 		os.chdir(original_dir)

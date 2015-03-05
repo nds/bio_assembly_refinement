@@ -12,6 +12,8 @@ class TestMain(unittest.TestCase):
 		input_file = os.path.join(data_dir, 'Salmonella_pacbio_unitig_0.fa')
 		test_dnaA_file = os.path.join(data_dir, "dnaA.fa")
 		output_file = os.path.join(os.getcwd(), 'reassembled_circularised_filtered_Salmonella_pacbio_unitig_0.fa')
+		summary_file = os.path.join(os.getcwd(), 'pacbio_postprocess_summary.txt')
+		intermediate_file = os.path.join(os.getcwd(), 'circularised_filtered_Salmonella_pacbio_unitig_0.fa')
 			
 		processor = main.Main( fasta_file = input_file, 
 						       dnaA_sequence = test_dnaA_file,
@@ -20,8 +22,11 @@ class TestMain(unittest.TestCase):
 						       debug = False				  
 						)
 		processor.process_assembly()
+		self.assertTrue(os.path.exists(intermediate_file))
 		self.assertTrue(os.path.exists(output_file))
 		os.remove(output_file)
+		os.remove(summary_file)
+		os.remove(intermediate_file)
 		
 		
 

@@ -57,7 +57,7 @@ def run_prodigal_and_get_start_of_a_gene(sequence):
 	boundary_start = round(0.3 * len(sequence)) # Look for a gene that starts after 30% of the sequence length
 	gene_start = 0
 	
-	fh = pyfastaq.utils.open_file_read('tmp_genes.gff')
+	fh = fastaqutils.open_file_read('tmp_genes.gff')
 	for line in fh:
 		columns = line.split('\t')
 		if columns[3] > boundary_start:

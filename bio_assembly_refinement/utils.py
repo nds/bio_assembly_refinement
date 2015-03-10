@@ -59,10 +59,12 @@ def run_prodigal_and_get_start_of_a_gene(sequence):
 	
 	fh = fastaqutils.open_file_read('tmp_genes.gff')
 	for line in fh:
-		columns = line.split('\t')
-		if columns[3] > boundary_start:
-			gene_start = columns[3] - 1 #Interbase
-			break;    		
+		if not line.startswith("#"):
+			columns = line.split('\t')
+			print(columns)
+			if columns[3] > boundary_start:
+				gene_start = columns[3] - 1 #Interbase
+				break;    		
 	delete('tmp_genes.gff')
 	delete('tmp_seq.fa')
 	return gene_start		

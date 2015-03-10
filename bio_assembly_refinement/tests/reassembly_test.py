@@ -27,7 +27,7 @@ class TestReassembly(unittest.TestCase):
 		
 		os.remove(output_file)
 		os.remove(summary_file)
-		shutil.rmtree('reassembly')
+# 		shutil.rmtree('reassembly')
 
 		
 		

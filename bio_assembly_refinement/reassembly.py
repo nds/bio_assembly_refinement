@@ -22,6 +22,7 @@ reassembler.run()
 '''
 import os
 import shutil
+import time
 from pyfastaq import tasks, sequences
 from pyfastaq import utils as fastaqutils
 from bio_assembly_refinement import utils
@@ -50,7 +51,11 @@ class Reassembly:
 		
 	def _build_final_filename(self):
 		input_filename = os.path.basename(self.input_file)
-		return os.path.join(self.working_directory, "reassembled_" + input_filename)	
+		return os.path.join(self.working_directory, "reassembled_" + input_filename)
+		
+		
+	def _build_default_filename(self):
+		return os.path.join(self.working_directory, self.output_directory, "consensus.fasta")
 		
 		
 	def _produce_summary(self, command):
@@ -73,13 +78,17 @@ class Reassembly:
 		fastaqutils.syscall(command)
 # 		pacbio_smrtanalysis --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
 
-		# Move results file 
-		default_results_file = os.path.join(self.working_directory, self.output_directory, "consensus.fasta")
-
-		# TODO: Make it wait for bsub to finish before moving results file and delete reassembly folder
-		if os.path.exists(default_results_file):
- 			shutil.move(default_results_file, self.output_file)
-			
+		# Wait for bsub to finish. Look into using process.wait() here
+		while not os.path.exists(self._build_default_filename()): 
+			time.sleep(30) 
+	
+		# Move results file and produce summary 
+		shutil.move(self._build_default_filename(), self._build_final_filename())			
 		self._produce_summary(command)
+		
+		# Clean up quiver directory
+		if not self.debug and os.path.exists(os.path.join(self.working_directory, self.output_directory)):
+			shutil.rmtree(os.path.join(self.working_directory, self.output_directory))
+			
 		os.chdir(original_dir)
 		

@@ -23,8 +23,8 @@ class TestMain(unittest.TestCase):
 						)
 		processor.process_assembly()
 		self.assertTrue(os.path.exists(intermediate_file))
-		self.assertTrue(os.path.exists(output_file))
-		os.remove(output_file)
+# 		self.assertTrue(os.path.exists(output_file))
+# 		os.remove(output_file)
 		os.remove(summary_file)
 		os.remove(intermediate_file)
 		

@@ -22,10 +22,10 @@ class TestReassembly(unittest.TestCase):
 		
 		reassembler.run()
 		
-		self.assertTrue(os.path.exists(output_file))
+# 		self.assertTrue(os.path.exists(output_file))
 		self.assertTrue(os.path.exists(summary_file))
 		
-		os.remove(output_file)
+# 		os.remove(output_file)
 		os.remove(summary_file)
 # 		shutil.rmtree('reassembly')
 

@@ -93,12 +93,14 @@ class Circularisation:
 		
 		
 	def _look_for_overlap_and_trim(self):
-		''' Look for overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
+		''' Look for the (best) overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
 # 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? Move check to pymummer?
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
-			acceptable_offset = self.overlap_offset * len(self.contigs[contig_id])
-			boundary = self.overlap_boundary_max * len(self.contigs[contig_id])
+			original_sequence = self.contigs[contig_id]
+			acceptable_offset = self.overlap_offset * len(original_sequence)
+			boundary = self.overlap_boundary_max * len(original_sequence)
+			best_overlap = None
 			for algn in self.alignments:	
 				if algn.qry_name == contig_id and \
 				   algn.ref_name == contig_id and \
@@ -108,12 +110,17 @@ class Circularisation:
 				   algn.qry_start > (algn.qry_length - acceptable_offset) and \
 				   algn.hit_length_ref > self.overlap_min_length and \
 				   algn.percent_identity > self.overlap_percent_identity:
-					original_sequence = self.contigs[contig_id]
-					self.contigs[contig_id] = original_sequence[algn.ref_end+1:algn.qry_start+1]
-					(self.contig_histories[contig_id]).overlap_length = algn.hit_length_ref
-					(self.contig_histories[contig_id]).overlap_location = str(algn.ref_start) + "," + str(algn.ref_end) + "-" + str(algn.qry_start) + "," + str(algn.qry_end)
-					circularisable_contigs.append(contig_id)
-					break #Just find one suitable overlap and skip other hits
+					if not best_overlap or \
+					   algn.ref_start < best_overlap.ref_start or \
+					   algn.qry_end > best_overlap.qry_end:
+					   best_overlap = algn
+				   
+			if best_overlap:		
+				self.contigs[contig_id] = original_sequence[best_overlap.ref_end+1:best_overlap.qry_start+1]
+				(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
+				(self.contig_histories[contig_id]).overlap_location = str(best_overlap.ref_start) + "," + str(best_overlap.ref_end) + "-" + str(best_overlap.qry_start) + "," + str(best_overlap.qry_end)
+				circularisable_contigs.append(contig_id)
+				
 		return circularisable_contigs  
 		
 		

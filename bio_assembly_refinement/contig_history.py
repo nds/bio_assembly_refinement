@@ -33,7 +33,7 @@ class ContigHistory:
 			   "\t" + "New name: " + self.new_name + "\n" + \
 		       "\t" + "Original length: " + str(self.original_length) + "\n" + \
 		       "\t" + "Coverage (not implemented yet): " + str(self.coverage) + "x" + "\n" + \
-		       "\t" + "Length of overlap: " + str(self.overlap_length) + "(" + self.overlap_location + ")\n" + \
+		       "\t" + "Length of overlap: " + str(self.overlap_length) + " (" + self.overlap_location + ")\n" + \
 		       "\t" + "Location of dnaA on original contig: " + str(self.location_of_dnaA) + "\n" + \
 		       "\t" + "Is dnA on reverse strand: " + str(self.dnaA_on_reverse_strand) + "\n" + \
 			   "\t" + "Location of gene on plasmid (0 if not relevant): " + str(self.location_of_gene_on_plasmid) + "\n" 

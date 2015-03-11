@@ -68,7 +68,8 @@ class Reassembly:
 		''' Run pacbio_smrtanalysis RS_sequencing'''
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
-			
+
+# 		pacbio_smrtanalysis --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
 		command = " ".join([self.pacbio_exec,
 							'--reference', self.input_file,
 							'RS_Resequencing',
@@ -76,19 +77,24 @@ class Reassembly:
 							self.read_data + "/*.bax.h5"
 							])							
 		fastaqutils.syscall(command)
-# 		pacbio_smrtanalysis --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
+
 
 		# Wait for bsub to finish. Look into using process.wait() here
-		while not os.path.exists(self._build_default_filename()): 
-			time.sleep(30) 
-	
-		# Move results file and produce summary 
-		shutil.move(self._build_default_filename(), self._build_final_filename())			
+# 		while not os.path.exists(self._build_default_filename()): 
+# 			time.sleep(30) 
+# 	
+# 		# Move results file and produce summary 
+# 		shutil.move(self._build_default_filename(), self._build_final_filename())
+
+# 		We have abandoned this effort of trying to wait for the bsub quiver job to finish 
+# 		When run in the pipeline, we can carry out this step as a separate task
+# 		When run on the command line the user will just have to live with the quiver output (consensus.fasta)
+			
 		self._produce_summary(command)
 		
 		# Clean up quiver directory
-		if not self.debug and os.path.exists(os.path.join(self.working_directory, self.output_directory)):
-			shutil.rmtree(os.path.join(self.working_directory, self.output_directory))
+# 		if not self.debug and os.path.exists(os.path.join(self.working_directory, self.output_directory)):
+# 			shutil.rmtree(os.path.join(self.working_directory, self.output_directory))
 			
 		os.chdir(original_dir)
 		

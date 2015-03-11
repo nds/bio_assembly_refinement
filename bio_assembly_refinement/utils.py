@@ -61,9 +61,9 @@ def run_prodigal_and_get_start_of_a_gene(sequence):
 	for line in fh:
 		if not line.startswith("#"):
 			columns = line.split('\t')
-			print(columns)
-			if columns[3] > boundary_start:
-				gene_start = columns[3] - 1 #Interbase
+			start_location = int(columns[3])
+			if start_location > boundary_start:
+				gene_start = start_location - 1 #Interbase
 				break;    		
 	delete('tmp_genes.gff')
 	delete('tmp_seq.fa')

@@ -51,7 +51,7 @@ class Circularisation:
 				 contigs={},
 				 alignments=[],
 				 dnaA_alignments=[], # Can be used for testing 
-				 overlap_offset=49, 
+				 overlap_offset=13, 
 				 overlap_boundary_max=50, 
 				 overlap_min_length=2000,
 				 overlap_percent_identity=85,
@@ -111,6 +111,7 @@ class Circularisation:
 					original_sequence = self.contigs[contig_id]
 					self.contigs[contig_id] = original_sequence[algn.ref_end+1:algn.qry_start+1]
 					(self.contig_histories[contig_id]).overlap_length = algn.hit_length_ref
+					(self.contig_histories[contig_id]).overlap_location = str(algn.ref_start) + "," + str(algn.ref_end) + "-" + str(algn.qry_start) + "," + str(algn.qry_end)
 					circularisable_contigs.append(contig_id)
 					break #Just find one suitable overlap and skip other hits
 		return circularisable_contigs  
@@ -124,6 +125,7 @@ class Circularisation:
 		Create a new name for the contigs
 		'''		
 		if not self.dnaA_alignments:
+			print("Running nucmer with dnaA")
 			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename(), min_percent_id=self.dnaA_hit_percent_identity)
 		
 		plasmid_count = 1
@@ -131,14 +133,17 @@ class Circularisation:
 		contig_ids.sort()
 		 
 		for contig_id in contig_ids:
+			print(contig_id)
 			plasmid = True		   		
+			trimmed_sequence = self.contigs[contig_id]
 			for algn in self.dnaA_alignments:	
+				print("Checking")
+				print(algn)
 				if algn.ref_name == contig_id and \
 				   algn.hit_length_ref > (self.dnaA_hit_length_minimum * algn.qry_length) and \
 				   algn.percent_identity > self.dnaA_hit_percent_identity:	     
-					trimmed_sequence = self.contigs[contig_id]
 					plasmid = False
-					
+					print(algn)
 					if algn.on_same_strand():
 						break_point = algn.ref_start						
 					else:

@@ -71,6 +71,7 @@ class Reassembly:
 
 # 		pacbio_smrtanalysis --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
 		command = " ".join([self.pacbio_exec,
+							'--memory 130',
 							'--reference', self.input_file,
 							'RS_Resequencing',
 							self.output_directory,

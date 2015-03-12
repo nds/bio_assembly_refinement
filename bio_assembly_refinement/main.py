@@ -49,7 +49,7 @@ class Main:
 				overlap_min_length=2000,
 				overlap_percent_identity=85,
 				dnaA_hit_percent_identity=80,
-				dnaA_hit_length_minimum=95,			
+				dnaA_hit_length_minimum=65,			
 				working_directory=None, 
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 

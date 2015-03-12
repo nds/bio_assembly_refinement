@@ -94,33 +94,37 @@ class Circularisation:
 		
 	def _look_for_overlap_and_trim(self):
 		''' Look for the (best) overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
-# 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? Move check to pymummer?
+# 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? 
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
 			original_sequence = self.contigs[contig_id]
 			acceptable_offset = self.overlap_offset * len(original_sequence)
 			boundary = self.overlap_boundary_max * len(original_sequence)
 			best_overlap = None
-			for algn in self.alignments:	
+			for algn in self.alignments:
+				r_coords = [algn.ref_start, algn.ref_end]
+				q_coords = [algn.qry_start, algn.qry_end]
+				q_coords.sort() # Sometimes overlap can be inverted
 				if algn.qry_name == contig_id and \
 				   algn.ref_name == contig_id and \
-				   algn.ref_start < acceptable_offset and \
-				   algn.ref_end < boundary and \
-				   algn.qry_end > boundary and \
-				   algn.qry_start > (algn.qry_length - acceptable_offset) and \
+				   r_coords[0] < acceptable_offset and \
+				   r_coords[1] < boundary and \
+				   q_coords[0] > boundary and \
+				   q_coords[1] > (algn.qry_length - acceptable_offset) and \
 				   algn.hit_length_ref > self.overlap_min_length and \
 				   algn.percent_identity > self.overlap_percent_identity:
 					if not best_overlap or \
-					   algn.ref_start < best_overlap.ref_start or \
-					   algn.qry_end > best_overlap.qry_end:
+					   (r_coords[0] < best_overlap.ref_start and \
+					   q_coords[1] > best_overlap.qry_end):
 					   best_overlap = algn
 				   
 			if best_overlap:		
-				self.contigs[contig_id] = original_sequence[best_overlap.ref_end+1:best_overlap.qry_start+1]
+				best_q_coords = [best_overlap.qry_start, best_overlap.qry_end]
+				best_q_coords.sort() # Sometimes overlap can be inverted
+				self.contigs[contig_id] = original_sequence[best_overlap.ref_end+1:best_q_coords[1]+1]
 				(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
-				(self.contig_histories[contig_id]).overlap_location = str(best_overlap.ref_start) + "," + str(best_overlap.ref_end) + "-" + str(best_overlap.qry_start) + "," + str(best_overlap.qry_end)
-				circularisable_contigs.append(contig_id)
-				
+				(self.contig_histories[contig_id]).overlap_location = str(best_overlap.ref_start) + "," + str(best_overlap.ref_end) + "-" + str(best_q_coords[0]) + "," + str(best_q_coords[1])
+				circularisable_contigs.append(contig_id)				
 		return circularisable_contigs  
 		
 		
@@ -132,7 +136,6 @@ class Circularisation:
 		Create a new name for the contigs
 		'''		
 		if not self.dnaA_alignments:
-			print("Running nucmer with dnaA")
 			self.dnaA_alignments = utils.run_nucmer(self._build_intermediate_filename(), self.dnaA_sequence, self._build_dnaA_alignments_filename(), min_percent_id=self.dnaA_hit_percent_identity)
 		
 		plasmid_count = 1
@@ -144,8 +147,6 @@ class Circularisation:
 			plasmid = True		   		
 			trimmed_sequence = self.contigs[contig_id]
 			for algn in self.dnaA_alignments:	
-				print("Checking")
-				print(algn)
 				if algn.ref_name == contig_id and \
 				   algn.hit_length_ref > (self.dnaA_hit_length_minimum * algn.qry_length) and \
 				   algn.percent_identity > self.dnaA_hit_percent_identity:	     

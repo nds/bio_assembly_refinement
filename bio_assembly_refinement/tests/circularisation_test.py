@@ -15,15 +15,15 @@ class TestCircularisation(unittest.TestCase):
 		test_contigs = { "contig1": "TATCGAGTATATTATCAACTGGACCGCCTCCGACGCATATAATTATGAAAATGGCTCTAT", # 4 base overlap and dnaA present
 					 	 "contig2": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # Overlap smaller than cutoff (should be ignored)
 					 	 "contig3": "AAGTCGGTAGCTTGGCATACGTTACGTATTACGCCCACTTTGTAGAAACTACCGGCTGAA", # 6 base overlap but no dnaA (plasmid)
-					 	 "contig4": "TATCGAGTATATTATCAACTGAGGCGGTCCCGACGCATATAATTATGAAAATGGCTCTAT", # 4 base overlap and dnaA on negative strand
+					 	 "contig4": "TATCGAGTATATTATCAACTGAGGCGGTCCCGACGCATATAATTATGAAAATGGCTCTAT", # 4 base overlap and dnaA on negative strand (rev comp sequence)
 					 	 "contig5": "GCTTATCGAGTATAACTGGACCGCCTCCGACGCATATAATTATGAAAATGGCTCTATCTA", # 4 base overlap but not right at the end, dnaA present
 					 	  
 					   }	
 					   			   		
-		test_overlap_coords = ['\t'.join(['1', '4', '60', '57', '4', '4', '100.00', '60', '60', '1', '1', 'contig1', 'contig1']),
-				 	 		   '\t'.join(['7', '9', '54', '52', '3', '3', '100.00', '60', '60', '1', '1', 'contig2', 'contig2']),
-				 	 		   '\t'.join(['1', '6', '60', '55', '6', '6', '100.00', '60', '60', '1', '1', 'contig3', 'contig3']),
-				 	 		   '\t'.join(['1', '4', '60', '57', '4', '4', '100.00', '60', '60', '1', '1', 'contig4', 'contig4']),
+		test_overlap_coords = ['\t'.join(['1', '4', '57', '60', '4', '4', '100.00', '60', '60', '1', '1', 'contig1', 'contig1']),
+				 	 		   '\t'.join(['7', '9', '52', '54', '3', '3', '100.00', '60', '60', '1', '1', 'contig2', 'contig2']),
+				 	 		   '\t'.join(['1', '6', '55', '60', '6', '6', '100.00', '60', '60', '1', '1', 'contig3', 'contig3']),
+				 	 		   '\t'.join(['1', '4', '57', '60', '4', '4', '100.00', '60', '60', '1', '1', 'contig4', 'contig4']),
 				 	 		   '\t'.join(['4', '7', '57', '54', '4', '4', '100.00', '60', '60', '1', '1', 'contig5', 'contig5'])
 							  ]							  
 		test_overlap_alignments = [alignment.Alignment(coord) for coord in test_overlap_coords] 

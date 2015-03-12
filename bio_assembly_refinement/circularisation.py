@@ -56,7 +56,7 @@ class Circularisation:
 				 overlap_min_length=2000,
 				 overlap_percent_identity=85,
 				 dnaA_hit_percent_identity=80,
-				 dnaA_hit_length_minimum=95,
+				 dnaA_hit_length_minimum=65,
 				 summary_file = "circularisation_summary_file.txt",			  
 				 debug=False):
 
@@ -114,8 +114,8 @@ class Circularisation:
 				   algn.hit_length_ref > self.overlap_min_length and \
 				   algn.percent_identity > self.overlap_percent_identity:
 					if not best_overlap or \
-					   (r_coords[0] < best_overlap.ref_start and \
-					   q_coords[1] > best_overlap.qry_end):
+					   (r_coords[0] <= best_overlap.ref_start and \
+					    q_coords[1] > max[best_overlap.qry_start, best_overlap.qry_end] ):
 					   best_overlap = algn
 				   
 			if best_overlap:		

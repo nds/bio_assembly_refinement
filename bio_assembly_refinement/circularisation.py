@@ -104,7 +104,7 @@ class Circularisation:
 			for algn in self.alignments:
 				r_coords = [algn.ref_start, algn.ref_end]
 				q_coords = [algn.qry_start, algn.qry_end]
-				q_coords.sort() # Sometimes overlap can be inverted
+				q_coords.sort() # Sometimes overlap can be inverted but we still want to think of them in a linear way
 				if algn.qry_name == contig_id and \
 				   algn.ref_name == contig_id and \
 				   r_coords[0] < acceptable_offset and \
@@ -115,8 +115,10 @@ class Circularisation:
 				   algn.percent_identity > self.overlap_percent_identity:
 					if not best_overlap or \
 					   (r_coords[0] <= best_overlap.ref_start and \
-					    q_coords[1] > max[best_overlap.qry_start, best_overlap.qry_end] ):
+					    q_coords[1] => best_overlap.qry_end ):
 					   best_overlap = algn
+					   best_overlap.qry_start = q_coords[0]
+					   best_overlap.qry_end = q_coords[1]
 				   
 			if best_overlap:		
 				best_q_coords = [best_overlap.qry_start, best_overlap.qry_end]

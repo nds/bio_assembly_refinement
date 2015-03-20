@@ -20,6 +20,7 @@ parser.add_argument('--overlap_min_length', type=int, help='Minimum length of ov
 parser.add_argument('--overlap_percent_identity', type=int, help='Percent match identity when determining if ends of contig overlap [%(default)s]', default=85, metavar='INT')
 parser.add_argument('--dnaA_hit_percent_identity', type=int, help='Percent match identity when looking at hits to dnaA [%(default)s]', default=80, metavar='INT')
 parser.add_argument('--dnaA_hit_length_minimum', type=int, help='Minimum acceptable hit length to dnaA expressed as percentage of dnaA length [%(default)s]', default=95, metavar='INT')
+parser.add_argument('--no_bsub', help="Do not bsub quiver", action='store_true', default=False)
 parser.add_argument('--reassembly_dir', help='Directory for reassembler program to put temp files in [%(default)s]', default='reassembly')
 parser.add_argument('--debug', help="Keep all temp files", action='store_true', default=False)
 
@@ -36,6 +37,7 @@ processor = main.Main(  fasta_file = options.fasta_file,
 						overlap_percent_identity = options.overlap_percent_identity,
 						dnaA_hit_percent_identity = options.dnaA_hit_percent_identity,
 						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,
+						no_bsub = options.no_bsub,
 						reassembly_dir = options.reassembly_dir,			
 						debug = options.debug
 						)

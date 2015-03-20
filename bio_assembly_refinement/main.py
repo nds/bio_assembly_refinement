@@ -14,6 +14,7 @@ overlap_min_length : minimum length of overlap (default 2KB)
 overlap_percent_identity : percent identity to use when determining if ends overlap
 dnaA_hit_percent_identity : percent identity to use when looking at hits to dnaA
 dnaA_hit_length_minimum : minimum length of hit to dnaA
+no_bsub : If set, will run quiver as a child process and not bsub it (useful for pipeline)
 working_directory : working directory (default current working directory) 
 pacbio_exec : pacbio resequencing exec (default pacbio_smrtanalysis) 
 nucmer_exec : nucmer exec (default nucmer) 
@@ -49,7 +50,8 @@ class Main:
 				overlap_min_length=2000,
 				overlap_percent_identity=85,
 				dnaA_hit_percent_identity=80,
-				dnaA_hit_length_minimum=65,			
+				dnaA_hit_length_minimum=65,		
+				no_bsub = False,	
 				working_directory=None, 
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 
@@ -68,6 +70,7 @@ class Main:
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
+		self.no_bsub = no_bsub
 		self.working_directory = working_directory if working_directory else os.getcwd()	 
 		self.pacbio_exec = pacbio_exec
 		self.nucmer_exec = nucmer_exec 
@@ -111,6 +114,7 @@ class Main:
 		reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
 											read_data=self.bax_files,
 											pacbio_exec=self.pacbio_exec,
+											no_bsub = self.no_bsub,
 											working_directory = self.working_directory,
 											output_directory = self.reassembly_dir,
 											summary_file = self.summary_file,

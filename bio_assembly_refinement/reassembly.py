@@ -6,6 +6,7 @@ Attributes:
 input_file : input fasta file name
 read_data : path to directory containing bax.h5 files
 output_directory : directory for results (default reassembly)
+no_bsub : If set, will run quiver as a child process and not bsub it (useful for pipeline)
 working_directory : path to working directory (default to current working directory)
 debug : do not delete temp files if set to true (default false)
 
@@ -32,7 +33,8 @@ class Reassembly:
 				 input_file,
 				 read_data,
 				 output_directory="reassembly",
-				 pacbio_exec="pacbio_smrtanalysis",				 
+				 pacbio_exec="pacbio_smrtanalysis",		
+				 no_bsub=False,		 
 				 working_directory=None,
 				 summary_file="smrtanalysis_summary.txt",
 				 debug=False
@@ -43,6 +45,7 @@ class Reassembly:
 		self.read_data = read_data
 		self.output_directory = output_directory
 		self.pacbio_exec = pacbio_exec
+		self.no_bsub = no_bsub
 		self.working_directory = working_directory if working_directory else os.getcwd()
 		self.summary_file = summary_file 			
 		self.debug = debug
@@ -68,15 +71,17 @@ class Reassembly:
 		''' Run pacbio_smrtanalysis RS_sequencing'''
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
-
+		no_bsub_option = "--no_bsub" if self.no_bsub else ""
 # 		pacbio_smrtanalysis --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
 		command = " ".join([self.pacbio_exec,
 							'--memory 130',
+							no_bsub_option,
 							'--reference', self.input_file,
 							'RS_Resequencing',
 							self.output_directory,
 							self.read_data + "/*.bax.h5"
-							])							
+							])	
+		print(command)						
 		fastaqutils.syscall(command)
 
 

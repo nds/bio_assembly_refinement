@@ -54,15 +54,17 @@ def run_prodigal_and_get_start_of_a_gene(sequence):
 	output_fw.close()
 	fastaqutils.syscall("prodigal -i tmp_seq.fa -o tmp_genes.gff -f gff -c")
 	
-	boundary_start = round(0.3 * length(sequence)) # Look for a gene that starts after 30% of the sequence length
+	boundary_start = round(0.3 * len(sequence)) # Look for a gene that starts after 30% of the sequence length
 	gene_start = 0
 	
-	fh = pyfastaq.utils.open_file_read('tmp_genes.gff')
+	fh = fastaqutils.open_file_read('tmp_genes.gff')
 	for line in fh:
-		columns = line.split('\t')
-		if columns[3] > boundary_start:
-			gene_start = columns[3] - 1 #Interbase
-			break;    		
+		if not line.startswith("#"):
+			columns = line.split('\t')
+			start_location = int(columns[3])
+			if start_location > boundary_start:
+				gene_start = start_location - 1 #Interbase
+				break;    		
 	delete('tmp_genes.gff')
 	delete('tmp_seq.fa')
 	return gene_start		

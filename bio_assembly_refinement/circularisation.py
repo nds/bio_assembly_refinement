@@ -51,12 +51,12 @@ class Circularisation:
 				 contigs={},
 				 alignments=[],
 				 dnaA_alignments=[], # Can be used for testing 
-				 overlap_offset=49, 
+				 overlap_offset=13, 
 				 overlap_boundary_max=50, 
 				 overlap_min_length=2000,
 				 overlap_percent_identity=85,
 				 dnaA_hit_percent_identity=80,
-				 dnaA_hit_length_minimum=95,
+				 dnaA_hit_length_minimum=65,
 				 summary_file = "circularisation_summary_file.txt",			  
 				 debug=False):
 
@@ -93,26 +93,40 @@ class Circularisation:
 		
 		
 	def _look_for_overlap_and_trim(self):
-		''' Look for overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
-# 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? Move check to pymummer?
+		''' Look for the (best) overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
+# 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? 
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
-			acceptable_offset = self.overlap_offset * len(self.contigs[contig_id])
-			boundary = self.overlap_boundary_max * len(self.contigs[contig_id])
-			for algn in self.alignments:	
+			original_sequence = self.contigs[contig_id]
+			acceptable_offset = self.overlap_offset * len(original_sequence)
+			boundary = self.overlap_boundary_max * len(original_sequence)
+			best_overlap = None
+			for algn in self.alignments:
+				r_coords = [algn.ref_start, algn.ref_end]
+				q_coords = [algn.qry_start, algn.qry_end]
+				q_coords.sort() # Sometimes overlap can be inverted but we still want to think of them in a linear way
 				if algn.qry_name == contig_id and \
 				   algn.ref_name == contig_id and \
-				   algn.ref_start < acceptable_offset and \
-				   algn.ref_end < boundary and \
-				   algn.qry_end > boundary and \
-				   algn.qry_start > (algn.qry_length - acceptable_offset) and \
+				   r_coords[0] < acceptable_offset and \
+				   r_coords[1] < boundary and \
+				   q_coords[0] > boundary and \
+				   q_coords[1] > (algn.qry_length - acceptable_offset) and \
 				   algn.hit_length_ref > self.overlap_min_length and \
 				   algn.percent_identity > self.overlap_percent_identity:
-					original_sequence = self.contigs[contig_id]
-					self.contigs[contig_id] = original_sequence[algn.ref_end+1:algn.qry_start+1]
-					(self.contig_histories[contig_id]).overlap_length = algn.hit_length_ref
-					circularisable_contigs.append(contig_id)
-					break #Just find one suitable overlap and skip other hits
+					if not best_overlap or \
+					   (r_coords[0] <= best_overlap.ref_start and \
+					    q_coords[1] >= best_overlap.qry_end ):
+					   best_overlap = algn
+					   best_overlap.qry_start = q_coords[0]
+					   best_overlap.qry_end = q_coords[1]
+				   
+			if best_overlap:		
+				best_q_coords = [best_overlap.qry_start, best_overlap.qry_end]
+				best_q_coords.sort() # Sometimes overlap can be inverted
+				self.contigs[contig_id] = original_sequence[best_overlap.ref_end+1:best_q_coords[1]+1]
+				(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
+				(self.contig_histories[contig_id]).overlap_location = str(best_overlap.ref_start) + "," + str(best_overlap.ref_end) + "-" + str(best_q_coords[0]) + "," + str(best_q_coords[1])
+				circularisable_contigs.append(contig_id)				
 		return circularisable_contigs  
 		
 		
@@ -131,14 +145,15 @@ class Circularisation:
 		contig_ids.sort()
 		 
 		for contig_id in contig_ids:
+			print(contig_id)
 			plasmid = True		   		
+			trimmed_sequence = self.contigs[contig_id]
 			for algn in self.dnaA_alignments:	
 				if algn.ref_name == contig_id and \
 				   algn.hit_length_ref > (self.dnaA_hit_length_minimum * algn.qry_length) and \
 				   algn.percent_identity > self.dnaA_hit_percent_identity:	     
-					trimmed_sequence = self.contigs[contig_id]
 					plasmid = False
-					
+					print(algn)
 					if algn.on_same_strand():
 						break_point = algn.ref_start						
 					else:

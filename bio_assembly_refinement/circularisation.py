@@ -115,7 +115,7 @@ class Circularisation:
 				   algn.percent_identity > self.overlap_percent_identity:
 					if not best_overlap or \
 					   (r_coords[0] <= best_overlap.ref_start and \
-					    q_coords[1] => best_overlap.qry_end ):
+					    q_coords[1] >= best_overlap.qry_end ):
 					   best_overlap = algn
 					   best_overlap.qry_start = q_coords[0]
 					   best_overlap.qry_end = q_coords[1]

@@ -8,9 +8,10 @@ dnaA_sequence : path to fasta file with dnaA/refA/refB
 bax_files : directory containing bax.h5 files
 cutoff_contig_length : minimum contig length considered
 contained_percent_match : percent identity to determine if contig is contained in another
-overlap_offset : offset from the ends where an overlap can begin
+overlap_offset : offset from the ends where an overlap can begin (1000)
 overlap_boundary_max : max boundary of overlap expressed as % of length of reference (default 50)
-overlap_min_length : minimum length of overlap (default 2KB)
+overlap_min_length : minimum length of overlap (default 1KB)
+overlap_max_length : minimum length of overlap (default 3KB)
 overlap_percent_identity : percent identity to use when determining if ends overlap
 dnaA_hit_percent_identity : percent identity to use when looking at hits to dnaA
 dnaA_hit_length_minimum : minimum length of hit to dnaA
@@ -45,9 +46,10 @@ class Main:
 				bax_files,
 				cutoff_contig_length=10000,
 				contained_percent_match=95,
-				overlap_offset=49, 
+				overlap_offset=1000, 
 				overlap_boundary_max=50, 
-				overlap_min_length=2000,
+				overlap_min_length=1000,
+				overlap_max_length=3000,
 				overlap_percent_identity=85,
 				dnaA_hit_percent_identity=80,
 				dnaA_hit_length_minimum=65,		
@@ -67,6 +69,7 @@ class Main:
 		self.overlap_offset = overlap_offset 
 		self.overlap_boundary_max = overlap_boundary_max
 		self.overlap_min_length = overlap_min_length
+		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
@@ -101,6 +104,7 @@ class Main:
 												       overlap_offset = self.overlap_offset,
 												       overlap_boundary_max = self.overlap_boundary_max,
 												       overlap_min_length = self.overlap_min_length,
+												       overlap_max_length = self.overlap_max_length,
 												       overlap_percent_identity = self.overlap_percent_identity,
 												       dnaA_hit_percent_identity = self.dnaA_hit_percent_identity,
 												       dnaA_hit_length_minimum = self.dnaA_hit_length_minimum,

@@ -64,11 +64,13 @@ Attributes of Main.py:
 
 **contained\_percent\_match**: minimum percent identity in nucmer hits to determine if contig is contained in another (default 95)
 
-**overlap\_offset**: offset from the ends of a contig where an overlap region can begin (expressed as % of length of contig) (default 49)
+**overlap\_offset**: offset from the ends of a contig where an overlap region can begin (default 1000)
 
 **overlap\_boundary\_max**: maximum boundary of the overlap between ends (expressed as % of contig length) (default 50)
 
-**overlap\_min\_length**: minimum length of overlap (default 2000 bases)
+**overlap\_min\_length**: minimum length of overlap (default 1000 bases)
+
+**overlap\_max\_length**: maximum length of overlap (default 3000 bases)
 
 **overlap\_percent\_identity**: minimum percent identity in nucmer hits to use when determining if ends overlap (default 85)
 

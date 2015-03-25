@@ -32,7 +32,7 @@ class Reassembly:
 	def __init__(self, 
 				 input_file,
 				 read_data,
-				 output_directory="reassembly",
+				 output_directory="improved_assembly",
 				 pacbio_exec="pacbio_smrtanalysis",		
 				 no_bsub=False,		 
 				 working_directory=None,

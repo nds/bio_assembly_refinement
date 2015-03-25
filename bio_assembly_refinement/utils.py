@@ -54,7 +54,7 @@ def run_prodigal_and_get_start_of_a_gene(sequence):
 	output_fw.close()
 	fastaqutils.syscall("prodigal -i tmp_seq.fa -o tmp_genes.gff -f gff -c")
 	
-	boundary_start = round(0.3 * len(sequence)) # Look for a gene that starts after 30% of the sequence length
+	boundary_start = round(0.3 * len(sequence)) # Look for a gene that starts after 30% of the sequence length (i.e. be sure to avoid region of overlap)
 	gene_start = 0
 	
 	fh = fastaqutils.open_file_read('tmp_genes.gff')

@@ -81,9 +81,12 @@ class Reassembly:
 							self.output_directory,
 							self.read_data + "/*.bax.h5"
 							])	
-		print(command)						
-		fastaqutils.syscall(command)
-
+							
+		if(os.path.getsize(self.input_file)):						
+			fastaqutils.syscall(command)
+			self._produce_summary(command)
+		else:
+			self._produce_summary("File empty: " + self.input_file)
 
 		# Wait for bsub to finish. Look into using process.wait() here
 # 		while not os.path.exists(self._build_default_filename()): 
@@ -96,7 +99,7 @@ class Reassembly:
 # 		When run in the pipeline, we can carry out this step as a separate task
 # 		When run on the command line the user will just have to live with the quiver output (consensus.fasta)
 			
-		self._produce_summary(command)
+		
 		
 		# Clean up quiver directory
 # 		if not self.debug and os.path.exists(os.path.join(self.working_directory, self.output_directory)):

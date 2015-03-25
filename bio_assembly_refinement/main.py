@@ -57,7 +57,7 @@ class Main:
 				working_directory=None, 
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 
-				reassembly_dir = "reassembly",
+				reassembly_dir = "improved_assembly",
 				summary_file = "pacbio_postprocess_summary.txt",
 				debug = False
 				):

@@ -17,7 +17,6 @@ class TestReassembly(unittest.TestCase):
 		reassembler = reassembly.Reassembly(input_file=test_file,
 											read_data=data_dir,
 											pacbio_exec=data_dir + "/dummy_pacbio_script",
-											output_directory="reassembly"
 											)
 		
 		reassembler.run()
@@ -29,12 +28,13 @@ class TestReassembly(unittest.TestCase):
 		reassembler = reassembly.Reassembly(input_file=another_test_file,
 											read_data=data_dir,
 											pacbio_exec=data_dir + "/dummy_pacbio_script",
-											output_directory="reassembly"
 											)
 		
 		reassembler.run()
 		self.assertTrue(filecmp.cmp(summary_file, expected_summary_file, shallow=False))
 		os.remove(summary_file)
+		
+		shutil.rmtree(os.path.join(os.getcwd(), "improved_assembly"))
 
 		
 		

@@ -10,9 +10,10 @@ working_directory : path to working directory (default to current working direct
 contigs : dict of contigs (instead of fasta file)
 alignments : pre computed alignments
 dnaA_alignments : pre-computed alignments against dnaA (for testing)
-overlap_offset: offset from edge that the overlap can start expressed as a % of length (default 49)
+overlap_offset: offset from edge that the overlap can start (default 1000)
 overlap_boundary_max : max boundary of overlap expressed as % of length of reference (default 50)
-overlap_min_length : minimum length of overlap (default 2KB)
+overlap_min_length : minimum length of overlap (default 1KB)
+overlap_max_length : minimum length of overlap (default 3KB)
 overlap_percent_identity : percent identity of match between ends (default 85)
 dnaA_hit_percent_identity : percent identity of match to dnaA (default 80)
 dnaA_hit_length_minimum : minimum acceptable hit length to dnaA expressed as % (of dnaA length) (default 95) 
@@ -51,9 +52,10 @@ class Circularisation:
 				 contigs={},
 				 alignments=[],
 				 dnaA_alignments=[], # Can be used for testing 
-				 overlap_offset=13, 
+				 overlap_offset=1000, 
 				 overlap_boundary_max=50, 
-				 overlap_min_length=2000,
+				 overlap_min_length=1000,
+				 overlap_max_length=3000,
 				 overlap_percent_identity=85,
 				 dnaA_hit_percent_identity=80,
 				 dnaA_hit_length_minimum=65,
@@ -67,9 +69,10 @@ class Circularisation:
 		self.contigs = contigs
 		self.alignments = alignments
 		self.dnaA_alignments = dnaA_alignments
-		self.overlap_offset = overlap_offset * 0.01
+		self.overlap_offset = overlap_offset
 		self.overlap_boundary_max = overlap_boundary_max * 0.01
 		self.overlap_min_length = overlap_min_length
+		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
@@ -93,40 +96,39 @@ class Circularisation:
 		
 		
 	def _look_for_overlap_and_trim(self):
-		''' Look for the (best) overlap in contigs. If found, trim overlap off the start. Remember contig for circularisation process '''		
+		''' Look for the (best) overlap in contigs. If found, trim overlap off the start and anything beyon. Remember contig for circularisation process '''		
 # 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? 
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
 			original_sequence = self.contigs[contig_id]
-			acceptable_offset = self.overlap_offset * len(original_sequence)
 			boundary = self.overlap_boundary_max * len(original_sequence)
 			best_overlap = None
 			for algn in self.alignments:
-				r_coords = [algn.ref_start, algn.ref_end]
-				q_coords = [algn.qry_start, algn.qry_end]
-				q_coords.sort() # Sometimes overlap can be inverted but we still want to think of them in a linear way
 				if algn.qry_name == contig_id and \
 				   algn.ref_name == contig_id and \
-				   r_coords[0] < acceptable_offset and \
-				   r_coords[1] < boundary and \
-				   q_coords[0] > boundary and \
-				   q_coords[1] > (algn.qry_length - acceptable_offset) and \
-				   algn.hit_length_ref > self.overlap_min_length and \
-				   algn.percent_identity > self.overlap_percent_identity:
+				   algn.ref_start < self.overlap_offset and \
+				   algn.ref_end < boundary and \
+				   algn.qry_start > boundary and \
+				   algn.qry_end > (algn.qry_length - self.overlap_offset) and \
+				   algn.hit_length_ref >= self.overlap_min_length and \
+				   algn.hit_length_ref <= self.overlap_max_length and \
+				   algn.percent_identity > self.overlap_percent_identity and\
+				   algn.on_same_strand():
 					if not best_overlap or \
-					   (r_coords[0] <= best_overlap.ref_start and \
-					    q_coords[1] >= best_overlap.qry_end ):
+					   (algn.ref_start <= best_overlap.ref_start and \
+					    algn.qry_end > best_overlap.qry_end ):
 					   best_overlap = algn
-					   best_overlap.qry_start = q_coords[0]
-					   best_overlap.qry_end = q_coords[1]
 				   
-			if best_overlap:		
-				best_q_coords = [best_overlap.qry_start, best_overlap.qry_end]
-				best_q_coords.sort() # Sometimes overlap can be inverted
-				self.contigs[contig_id] = original_sequence[best_overlap.ref_end+1:best_q_coords[1]+1]
-				(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
-				(self.contig_histories[contig_id]).overlap_location = str(best_overlap.ref_start) + "," + str(best_overlap.ref_end) + "-" + str(best_q_coords[0]) + "," + str(best_q_coords[1])
-				circularisable_contigs.append(contig_id)				
+			if best_overlap: #trim		
+				trimmed_sequence = original_sequence[best_overlap.ref_end+1:best_overlap.qry_end+1]
+				if(len(trimmed_sequence)/len(original_sequence) > 0.9):
+					self.contigs[contig_id] = trimmed_sequence
+					(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
+					(self.contig_histories[contig_id]).overlap_location = ",".join(map(str,[best_overlap.ref_start, best_overlap.ref_end])) + \
+																		  "-" + \
+																		  ",".join(map(str,[best_overlap.qry_start, best_overlap.qry_end]))
+					(self.contig_histories[contig_id]).new_length = len(self.contigs[contig_id])
+					circularisable_contigs.append(contig_id)				
 		return circularisable_contigs  
 		
 		
@@ -142,10 +144,8 @@ class Circularisation:
 		
 		plasmid_count = 1
 		chromosome_count = 1
-		contig_ids.sort()
-		 
+
 		for contig_id in contig_ids:
-			print(contig_id)
 			plasmid = True		   		
 			trimmed_sequence = self.contigs[contig_id]
 			for algn in self.dnaA_alignments:	
@@ -153,7 +153,6 @@ class Circularisation:
 				   algn.hit_length_ref > (self.dnaA_hit_length_minimum * algn.qry_length) and \
 				   algn.percent_identity > self.dnaA_hit_percent_identity:	     
 					plasmid = False
-					print(algn)
 					if algn.on_same_strand():
 						break_point = algn.ref_start						
 					else:
@@ -170,7 +169,8 @@ class Circularisation:
 					break;
 					
 			if plasmid:
-				# Choose random gene in plasmid, and circularise
+				# If possible, choose random gene in plasmid, and circularise
+				# Prodigal only works for contigs > 20000 bases
 				if len(self.contigs[contig_id]) > 20000:
 					gene_start = utils.run_prodigal_and_get_start_of_a_gene(self.contigs[contig_id])
 					if gene_start:
@@ -197,7 +197,7 @@ class Circularisation:
 			if history.overlap_length > 0:
 				text += history.pretty_text()
 			else:
-				text += "Contig: " + id + " (Unable to circularise) \n"		 
+				text += "Contig: " + id + " \n (Unable to circularise) \n"		 
 		utils.write_text_to_file(text, self.summary_file)
 		
 			

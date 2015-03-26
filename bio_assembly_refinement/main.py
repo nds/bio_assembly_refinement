@@ -114,18 +114,18 @@ class Main:
 												      
 		circulariser.run()      
 				
-		 
-		reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
-											read_data=self.bax_files,
-											pacbio_exec=self.pacbio_exec,
-											no_bsub = self.no_bsub,
-											working_directory = self.working_directory,
-											output_directory = self.reassembly_dir,
-											summary_file = self.summary_file,
-											debug = self.debug
-											)
+		if os.path.exists(circulariser.output_file):
+			reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
+												read_data=self.bax_files,
+												pacbio_exec=self.pacbio_exec,
+												no_bsub = self.no_bsub,
+												working_directory = self.working_directory,
+												output_directory = self.reassembly_dir,
+												summary_file = self.summary_file,
+												debug = self.debug
+												)
 											
-		reassembler.run()
+			reassembler.run()
 		
 		if not self.debug:
 			utils.delete(ccleaner.output_file)

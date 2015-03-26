@@ -228,9 +228,11 @@ class Circularisation:
 		os.chdir(self.working_directory)	
 		circularisable_contigs = self._look_for_overlap_and_trim()		
 		self._write_contigs_to_file(self.contigs, self._build_intermediate_filename()) # Write trimmed sequences to file
-		self._circularise_and_rename(circularisable_contigs)									
-		self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename()) # Write circularisable contigs to new file
-		tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
+		self._circularise_and_rename(circularisable_contigs)	
+		
+		if circularisable_contigs:								
+			self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename()) # Write circularisable contigs to new file
+			tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
 		
 		self._produce_summary()
 		

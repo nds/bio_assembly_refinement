@@ -18,6 +18,7 @@ parser.add_argument('--overlap_offset', type=int, help='Offset from the ends whe
 parser.add_argument('--overlap_boundary_max', type=int, help='Maximum boundary of the overlap between ends expressed as percentage of contig length [%(default)s]', default=50, metavar='INT')
 parser.add_argument('--overlap_min_length', type=int, help='Minimum length of overlap [%(default)s]', default=1000, metavar='INT')
 parser.add_argument('--overlap_max_length', type=int, help='Maximum length of overlap [%(default)s]', default=3000, metavar='INT')
+parser.add_argument('--min_trim_length', type=float, help='Minimum trimmed length of contig over original length [%(default)s]', default=0.89, metavar='FLOAT')
 parser.add_argument('--overlap_percent_identity', type=int, help='Percent match identity when determining if ends of contig overlap [%(default)s]', default=85, metavar='INT')
 parser.add_argument('--dnaA_hit_percent_identity', type=int, help='Percent match identity when looking at hits to dnaA [%(default)s]', default=80, metavar='INT')
 parser.add_argument('--dnaA_hit_length_minimum', type=int, help='Minimum acceptable hit length to dnaA expressed as percentage of dnaA length [%(default)s]', default=95, metavar='INT')
@@ -37,6 +38,7 @@ processor = main.Main(  fasta_file = options.fasta_file,
 						overlap_min_length = options.overlap_min_length,
 						overlap_max_length = options.overlap_max_length,
 						overlap_percent_identity = options.overlap_percent_identity,
+						min_trim_length = options.min_trim_length,
 						dnaA_hit_percent_identity = options.dnaA_hit_percent_identity,
 						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,
 						no_bsub = options.no_bsub,

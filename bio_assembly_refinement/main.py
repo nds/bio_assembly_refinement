@@ -51,6 +51,7 @@ class Main:
 				overlap_min_length=1000,
 				overlap_max_length=3000,
 				overlap_percent_identity=85,
+				min_trim_length = 0.89,
 				dnaA_hit_percent_identity=80,
 				dnaA_hit_length_minimum=65,		
 				no_bsub = False,	
@@ -71,6 +72,7 @@ class Main:
 		self.overlap_min_length = overlap_min_length
 		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
+		self.min_trim_length = min_trim_length
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
 		self.no_bsub = no_bsub
@@ -106,6 +108,7 @@ class Main:
 												       overlap_min_length = self.overlap_min_length,
 												       overlap_max_length = self.overlap_max_length,
 												       overlap_percent_identity = self.overlap_percent_identity,
+												       min_trim_length = self.min_trim_length,
 												       dnaA_hit_percent_identity = self.dnaA_hit_percent_identity,
 												       dnaA_hit_length_minimum = self.dnaA_hit_length_minimum,
 												       summary_file = self.summary_file,

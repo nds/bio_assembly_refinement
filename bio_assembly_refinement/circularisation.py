@@ -15,6 +15,7 @@ overlap_boundary_max : max boundary of overlap expressed as % of length of refer
 overlap_min_length : minimum length of overlap (default 1KB)
 overlap_max_length : minimum length of overlap (default 3KB)
 overlap_percent_identity : percent identity of match between ends (default 85)
+min_trim_length : minimum trimmed length of contig over total contig length (default 0.89)
 dnaA_hit_percent_identity : percent identity of match to dnaA (default 80)
 dnaA_hit_length_minimum : minimum acceptable hit length to dnaA expressed as % (of dnaA length) (default 95) 
 summary_file :  summary file (default circularisation_summary_file.txt)
@@ -57,6 +58,7 @@ class Circularisation:
 				 overlap_min_length=1000,
 				 overlap_max_length=3000,
 				 overlap_percent_identity=85,
+				 min_trim_length=0.89,
 				 dnaA_hit_percent_identity=80,
 				 dnaA_hit_length_minimum=65,
 				 summary_file = "circularisation_summary_file.txt",			  
@@ -74,6 +76,7 @@ class Circularisation:
 		self.overlap_min_length = overlap_min_length
 		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
+		self.min_trim_length = min_trim_length
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
 		self.summary_file = summary_file
@@ -96,7 +99,7 @@ class Circularisation:
 		
 		
 	def _look_for_overlap_and_trim(self):
-		''' Look for the (best) overlap in contigs. If found, trim overlap off the start and anything beyon. Remember contig for circularisation process '''		
+		''' Look for the (best) overlap in contigs. If found, trim overlap off the start and anything beyond. Remember contig for circularisation process '''		
 # 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? 
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
@@ -121,7 +124,7 @@ class Circularisation:
 				   
 			if best_overlap: #trim		
 				trimmed_sequence = original_sequence[best_overlap.ref_end+1:best_overlap.qry_end+1]
-				if(len(trimmed_sequence)/len(original_sequence) > 0.9):
+				if(len(trimmed_sequence)/len(original_sequence) > self.min_trim_length):
 					self.contigs[contig_id] = trimmed_sequence
 					(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
 					(self.contig_histories[contig_id]).overlap_location = ",".join(map(str,[best_overlap.ref_start, best_overlap.ref_end])) + \

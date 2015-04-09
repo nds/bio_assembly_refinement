@@ -20,7 +20,7 @@ class ContigHistory:
 		self.original_id = original_id
 		self.original_length = original_length
 		self.new_length = '-'
-		self.new_name = '(Not circularised)'
+		self.new_name = ''
 		self.coverage = 0
 		self.overlap_length = '-'
 		self.overlap_location = 'No overlap found'

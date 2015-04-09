@@ -204,7 +204,7 @@ class Circularisation:
 		'''Generate summary text and write to summary file'''
 		text = 	'~~Circularisation~~\n'
 		# ID New_ID Original_length New_length Overlap Circularisation_point_in_trimmed_sequence dnaA_reversed Comment
-		text += "ID\tNew_ID\tOriginal_length\tNew_length\tOverlap\tCircularisation_point_in_trimmed_sequence\tdnaA_gene_reversed\tComment\n"
+		text += "ID\tNew_ID\tOriginal_length\tTrimmed_length\tOverlap\tCircularisation_point_in_trimmed_sequence\tdnaA_gene_reversed\tComment\n"
 		for id in sorted(self.contigs.keys()):
 			history = self.contig_histories[id]
 			text += history.pretty_text() + "\n"

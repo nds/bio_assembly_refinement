@@ -95,7 +95,7 @@ class ContigBreakFinder:
 				
 			for algn in self.dnaA_alignments:			
 				if algn.ref_name == seq.id and \
-				   algn.hit_length_ref >= (algn.qry_length * match_length_percent/100) and \
+				   algn.hit_length_ref >= (algn.qry_length * self.match_length_percent/100) and \
 				   algn.percent_identity >= hit_percent_id and \
 				   algn.qry_start == 1:	     
 					plasmid = False

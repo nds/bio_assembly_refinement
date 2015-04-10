@@ -101,7 +101,7 @@ class Main:
 		circulariser = circularisation.Circularisation(fasta_file = ccleaner.output_file, # Need the filename to retain naming scheme even though we pass in pre-computed contigs
 													   dnaA_sequence = self.dnaA_sequence,
 													   working_directory = self.working_directory,
-													   contigs = ccleaner.filtered_contigs,
+													   contigs = ccleaner.contigs,
 												       alignments = ccleaner.alignments,
 												       overlap_offset = self.overlap_offset,
 												       overlap_boundary_max = self.overlap_boundary_max,

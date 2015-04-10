@@ -7,6 +7,7 @@ fasta_file : input fasta file name
 working_directory : path to working directory (default to current working directory)
 cutoff_contig_length : contigs smaller than this will be disregarded (default 10,000)
 percent_match : percent identity of nucmer hit when deciding if contig is contained in another
+ids_keep : list of contig ids to keep no matter what (file or list)
 summary_file : summary file
 debug : do not delete temp files if set to true (default false)
 
@@ -32,6 +33,7 @@ class ContigCleanup:
 				 working_directory=None, 
 				 cutoff_contig_length=2000, 
 				 percent_match=95, 
+				 ids_keep = None,
 				 summary_file="contig_filtration_summary.txt",
 				 debug=False):
 		''' Constructor '''
@@ -39,6 +41,7 @@ class ContigCleanup:
 		self.working_directory = working_directory if working_directory else os.getcwd()			
 		self.cutoff_contig_length = cutoff_contig_length
 		self.percent_match = percent_match
+		self.ids_keep = ids_keep
 		self.summary_file = summary_file
 		self.debug = debug		
 		self.contigs = {}
@@ -100,6 +103,7 @@ class ContigCleanup:
 		'''Produce a filtered fasta file.'''	
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
+		
 		intermediate_file = self._build_intermediate_filename()
 				
 		small_contigs = self._find_small_contigs()

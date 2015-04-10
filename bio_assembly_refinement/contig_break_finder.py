@@ -73,8 +73,9 @@ class ContigBreakFinder:
 		'''Write summary'''
 		if (not os.path.exists(self.summary_file)) or os.stat(self.summary_file).st_size == 0:
 			header = '\t'.join(['id', 'break_point', 'gene_name', 'gene_reversed', 'new_name']) +'\n'
-			utils.write_text_to_file(header, self.summary_file)			
-		text = '\t'.join(map(str, [contig_id, break_point, gene_name, gene_reversed, new_name])) + '\n'
+			utils.write_text_to_file(header, self.summary_file)
+		name_to_print = new_name if self.rename else '-'			
+		text = '\t'.join(map(str, [contig_id, break_point, gene_name, gene_reversed, name_to_print])) + '\n'
 		utils.write_text_to_file(text, self.summary_file)		
 	
 
@@ -95,8 +96,8 @@ class ContigBreakFinder:
 				
 			for algn in self.dnaA_alignments:			
 				if algn.ref_name == seq.id and \
-				   algn.hit_length_ref >= (algn.qry_length * match_length_percent/100) and \
-				   algn.percent_identity >= hit_percent_id and \
+				   algn.hit_length_ref >= (algn.qry_length * self.match_length_percent/100) and \
+				   algn.percent_identity >= self.hit_percent_id and \
 				   algn.qry_start == 1:	     
 					plasmid = False
 					gene_name = algn.qry_name
@@ -124,7 +125,7 @@ class ContigBreakFinder:
 						break_point = gene_start
 						gene_name = 'predicted_gene'
 					
-			contig_name = new_name if (self.rename and new_name) else seq.id
+			contig_name = new_name if self.rename else seq.id
 			print(sequences.Fasta(contig_name, seq.seq), file=output_fw)
 			self._write_summary(seq.id, break_point, gene_name, gene_on_reverse_strand, new_name)
 		output_fw.close()

@@ -98,7 +98,7 @@ class ContigBreakFinder:
 				if algn.ref_name == seq.id and \
 				   algn.hit_length_ref >= (algn.qry_length * self.match_length_percent/100) and \
 				   algn.percent_identity >= self.hit_percent_id and \
-				   algn.qry_start == 1:	     
+				   algn.qry_start == 0:	     
 					plasmid = False
 					gene_name = algn.qry_name
 					if algn.on_same_strand():
@@ -115,8 +115,9 @@ class ContigBreakFinder:
 					break;
 					
 			if plasmid:
-				new_name = 'plasmid' + str(plasmid_count)
-				plasmid_count += 1
+				if len(seq.seq) < 200000: # Only rename if it's roughly plasmid size
+					new_name = 'plasmid' + str(plasmid_count)
+					plasmid_count += 1
 				if self.choose_random_gene and len(seq.seq) > 20000:
 					# If suitable, choose random gene in plasmid, and circularise. Prodigal only works for contigs > 20000 bases				
 					gene_start = self._run_prodigal_and_get_start_of_a_gene(seq.seq)

@@ -81,7 +81,7 @@ class ContigBreakFinder:
 
 	def run(self):
 		'''Look for break point in contigs. If found, circularise and rename contig. Write to a log.'''	
-		self.dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, "nucmer_gene.hits", min_percent_id=self.hit_percent_id)
+		self.dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, "gene.hits", min_percent_id=self.hit_percent_id, run_promer=True)
 		plasmid_count = 1
 		chromosome_count = 1
 		seq_reader = sequences.file_reader(self.fasta_file)
@@ -96,7 +96,7 @@ class ContigBreakFinder:
 				
 			for algn in self.dnaA_alignments:			
 				if algn.ref_name == seq.id and \
-				   algn.hit_length_ref >= (algn.qry_length * self.match_length_percent/100) and \
+				   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
 				   algn.percent_identity >= self.hit_percent_id and \
 				   algn.qry_start == 0:	     
 					plasmid = False

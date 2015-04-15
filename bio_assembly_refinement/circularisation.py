@@ -15,6 +15,7 @@ overlap_boundary_max : max boundary of overlap expressed as % of length of refer
 overlap_min_length : minimum length of overlap (default 1KB)
 overlap_max_length : minimum length of overlap (default 3KB)
 overlap_percent_identity : percent identity of match between ends (default 85)
+min_trim_length : minimum trimmed length of contig over total contig length (default 0.89)
 dnaA_hit_percent_identity : percent identity of match to dnaA (default 80)
 dnaA_hit_length_minimum : minimum acceptable hit length to dnaA expressed as % (of dnaA length) (default 95) 
 summary_file :  summary file (default circularisation_summary_file.txt)
@@ -57,6 +58,7 @@ class Circularisation:
 				 overlap_min_length=1000,
 				 overlap_max_length=3000,
 				 overlap_percent_identity=85,
+				 min_trim_length=0.89,
 				 dnaA_hit_percent_identity=80,
 				 dnaA_hit_length_minimum=65,
 				 summary_file = "circularisation_summary_file.txt",			  
@@ -74,6 +76,7 @@ class Circularisation:
 		self.overlap_min_length = overlap_min_length
 		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
+		self.min_trim_length = min_trim_length
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum * 0.01	
 		self.summary_file = summary_file
@@ -96,7 +99,7 @@ class Circularisation:
 		
 		
 	def _look_for_overlap_and_trim(self):
-		''' Look for the (best) overlap in contigs. If found, trim overlap off the start and anything beyon. Remember contig for circularisation process '''		
+		''' Look for the (best) overlap in contigs. If found, trim overlap off the start and anything beyond. Remember contig for circularisation process '''		
 # 		TODO: Optimise. Work this out when we parse alignments in clean contigs stage? 
 		circularisable_contigs = []
 		for contig_id in self.contigs.keys():
@@ -112,23 +115,30 @@ class Circularisation:
 				   algn.qry_end > (algn.qry_length - self.overlap_offset) and \
 				   algn.hit_length_ref >= self.overlap_min_length and \
 				   algn.hit_length_ref <= self.overlap_max_length and \
-				   algn.percent_identity > self.overlap_percent_identity and\
-				   algn.on_same_strand():
+				   algn.percent_identity > self.overlap_percent_identity:
 					if not best_overlap or \
 					   (algn.ref_start <= best_overlap.ref_start and \
 					    algn.qry_end > best_overlap.qry_end ):
 					   best_overlap = algn
 				   
-			if best_overlap: #trim		
+			if best_overlap: #try to trim	
+				(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
+				(self.contig_histories[contig_id]).overlap_location = ",".join(map(str,[best_overlap.ref_start, best_overlap.ref_end])) + \
+																	  "-" + \
+																	  ",".join(map(str,[best_overlap.qry_start, best_overlap.qry_end]))
+				
+				if not best_overlap.on_same_strand:
+					(self.contig_histories[contig_id]).comment = "Overlap reversed"
+					break		
+					
 				trimmed_sequence = original_sequence[best_overlap.ref_end+1:best_overlap.qry_end+1]
-				if(len(trimmed_sequence)/len(original_sequence) > 0.9):
+				print(str(len(trimmed_sequence)/len(original_sequence)))
+				if(len(trimmed_sequence)/len(original_sequence) > self.min_trim_length):
 					self.contigs[contig_id] = trimmed_sequence
-					(self.contig_histories[contig_id]).overlap_length = best_overlap.hit_length_ref
-					(self.contig_histories[contig_id]).overlap_location = ",".join(map(str,[best_overlap.ref_start, best_overlap.ref_end])) + \
-																		  "-" + \
-																		  ",".join(map(str,[best_overlap.qry_start, best_overlap.qry_end]))
-					(self.contig_histories[contig_id]).new_length = len(self.contigs[contig_id])
-					circularisable_contigs.append(contig_id)				
+					(self.contig_histories[contig_id]).new_length = len(self.contigs[contig_id])				
+					circularisable_contigs.append(contig_id)	
+				else:
+					(self.contig_histories[contig_id]).comment = "Trimmed length too short"			
 		return circularisable_contigs  
 		
 		
@@ -164,7 +174,7 @@ class Circularisation:
 					self.contigs[contig_id] = trimmed_sequence[break_point:] + trimmed_sequence[0:break_point]		
 					# Record history
 					(self.contig_histories[contig_id]).new_name = 'chromosome' + str(chromosome_count)
-					(self.contig_histories[contig_id]).location_of_dnaA = str(algn.ref_start) + "-" + str(algn.ref_end)
+					(self.contig_histories[contig_id]).position_used_for_circularisation = str(break_point)
 					chromosome_count += 1		
 					break;
 					
@@ -175,12 +185,13 @@ class Circularisation:
 					gene_start = utils.run_prodigal_and_get_start_of_a_gene(self.contigs[contig_id])
 					if gene_start:
 						self.contigs[contig_id] = trimmed_sequence[gene_start:] + trimmed_sequence[0:gene_start]	
-						(self.contig_histories[contig_id]).location_of_gene_on_plasmid = gene_start
+						(self.contig_histories[contig_id]).position_used_for_circularisation = str(gene_start)
 				(self.contig_histories[contig_id]).new_name = 'plasmid' + str(plasmid_count)
 				plasmid_count += 1
 		
 
 	def _write_contigs_to_file(self, contig_ids, out_file):
+		'''Write contig sequences to a file'''
 		output_fw = fastaqutils.open_file_write(out_file)
 		for id in contig_ids:
 			new_name = (self.contig_histories[id]).new_name
@@ -192,12 +203,11 @@ class Circularisation:
 	def _produce_summary(self):
 		'''Generate summary text and write to summary file'''
 		text = 	'~~Circularisation~~\n'
-		for id in self.contig_histories.keys():
+		# ID New_ID Original_length New_length Overlap Circularisation_point_in_trimmed_sequence dnaA_reversed Comment
+		text += "ID\tNew_ID\tOriginal_length\tTrimmed_length\tOverlap\tCircularisation_point_in_trimmed_sequence\tdnaA_gene_reversed\tComment\n"
+		for id in sorted(self.contigs.keys()):
 			history = self.contig_histories[id]
-			if history.overlap_length > 0:
-				text += history.pretty_text()
-			else:
-				text += "Contig: " + id + " \n (Unable to circularise) \n"		 
+			text += history.pretty_text() + "\n"
 		utils.write_text_to_file(text, self.summary_file)
 		
 			
@@ -228,9 +238,11 @@ class Circularisation:
 		os.chdir(self.working_directory)	
 		circularisable_contigs = self._look_for_overlap_and_trim()		
 		self._write_contigs_to_file(self.contigs, self._build_intermediate_filename()) # Write trimmed sequences to file
-		self._circularise_and_rename(circularisable_contigs)									
-		self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename()) # Write circularisable contigs to new file
-		tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
+		self._circularise_and_rename(circularisable_contigs)	
+		
+		if circularisable_contigs:								
+			self._write_contigs_to_file(circularisable_contigs, self._build_unsorted_circularised_filename()) # Write circularisable contigs to new file
+			tasks.sort_by_size(self._build_unsorted_circularised_filename(), self.output_file) # Sort contigs in final file according to size
 		
 		self._produce_summary()
 		

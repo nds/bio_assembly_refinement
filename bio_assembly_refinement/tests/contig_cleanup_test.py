@@ -15,26 +15,41 @@ class TestContigCleanup(unittest.TestCase):
 		summary_file = os.path.join(os.getcwd(), 'contig_filtration_summary.txt')
 		
 		# Expected values
-		small_contigs = ['TEST_CONTIG_0']
-		contained_contigs = ['TEST_CONTIG_11', 'TEST_CONTIG_12']
-		expected_coords = [
-			'\t'.join(['1',	'180',	'1',	'180',	'180',	'180',	'100.00',	'200',	'180',	'1',	'1',	'TEST_CONTIG_1',	'TEST_CONTIG_11']),
-			'\t'.join(['1',	'180',	'1',	'180',	'180',	'180',	'100.00',	'180',	'200',	'1',	'1',	'TEST_CONTIG_11',	'TEST_CONTIG_1']),
-			'\t'.join(['3',	'200',	'3',	'200',	'198',	'198',	'100.00',	'200',	'200',	'1',	'1',	'TEST_CONTIG_12',	'TEST_CONTIG_2']),
-			'\t'.join(['3',	'200',	'3',	'200',	'198',	'198',	'100.00',	'200',	'200',	'1',	'1',	'TEST_CONTIG_2',	'TEST_CONTIG_12']),
-		]
-		expected_alignments = [alignment.Alignment(coord) for coord in expected_coords]
+# 		small_contigs = ['TEST_CONTIG_0']
+# 		contained_contigs = ['TEST_CONTIG_11', 'TEST_CONTIG_12']
+# 		expected_coords = [
+# 			'\t'.join(['1',	'180',	'1',	'180',	'180',	'180',	'100.00',	'200',	'180',	'1',	'1',	'TEST_CONTIG_1',	'TEST_CONTIG_11']),
+# 			'\t'.join(['1',	'180',	'1',	'180',	'180',	'180',	'100.00',	'180',	'200',	'1',	'1',	'TEST_CONTIG_11',	'TEST_CONTIG_1']),
+# 			'\t'.join(['3',	'200',	'3',	'200',	'198',	'198',	'100.00',	'200',	'200',	'1',	'1',	'TEST_CONTIG_12',	'TEST_CONTIG_2']),
+# 			'\t'.join(['3',	'200',	'3',	'200',	'198',	'198',	'100.00',	'200',	'200',	'1',	'1',	'TEST_CONTIG_2',	'TEST_CONTIG_12']),
+# 		]
+# 		expected_alignments = [alignment.Alignment(coord) for coord in expected_coords]
 		expected_filtered_file = os.path.join(data_dir, 'test_fasta_file_filtered.fa')
 		expected_summary_file = os.path.join(data_dir, 'filtration_summary_file.txt')
 				
 		ccleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=6)
-		self.assertEqual(ccleaner._find_small_contigs(), small_contigs) 
-		self.assertEqual(ccleaner._find_contained_contigs(input_file), contained_contigs)
 		ccleaner.run()
 		self.assertTrue(os.path.isfile(output_file))# Does output file exist and is it named right? 
 		self.assertTrue(filecmp.cmp(output_file, expected_filtered_file, shallow=False)) 
 		self.assertTrue(os.path.isfile(summary_file))# Does summary file exist?
-
 		os.remove(output_file)
 		os.remove(summary_file)
+
+
+	def test_run_with_ids_to_keep(self):
+			'''Test running with a list of ids to keep '''
+			input_file = os.path.join(data_dir, 'test_fasta_file.fa')
+			output_file = os.path.join(os.getcwd(), 'filtered_test_fasta_file.fa')
+			expected_filtered_file = os.path.join(data_dir, 'test_fasta_file_filtered_two.fa')
+			summary_file = os.path.join(os.getcwd(), 'contig_filtration_summary.txt')
+			ids_to_keep = ['TEST_CONTIG_11']
+			ids_to_keep_file = os.path.join(data_dir, 'ids_to_keep.txt')
+			ccleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=6, ids=ids_to_keep_file)
+			ccleaner.run()
+			self.assertTrue(os.path.isfile(output_file))# Does output file exist and is it named right? 
+			self.assertTrue(filecmp.cmp(output_file, expected_filtered_file, shallow=False)) 
+			os.remove(output_file)
+			os.remove(summary_file)
+
+
 

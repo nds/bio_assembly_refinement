@@ -22,11 +22,10 @@ class TestMain(unittest.TestCase):
 						       debug = False				  
 						)
 		processor.process_assembly()
-		self.assertTrue(os.path.exists(intermediate_file))
-# 		self.assertTrue(os.path.exists(output_file))
-# 		os.remove(output_file)
+		self.assertTrue(not os.path.exists(intermediate_file)) # Will not have circularised
+		self.assertTrue(os.path.exists(summary_file))
 		os.remove(summary_file)
-		os.remove(intermediate_file)
+# 		os.remove(intermediate_file)
 		
 		
 

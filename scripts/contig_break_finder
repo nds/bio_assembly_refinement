@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+from bio_assembly_refinement import contig_break_finder
+
+parser = argparse.ArgumentParser(
+				description = 'Find a break point in the contig to be the new start',
+    			usage = '%(prog)s [options]',
+)
+
+parser.add_argument('fasta_file', help='Input fasta file', metavar='Input fasta file')
+parser.add_argument('gene_file', help='Fasta file with dnaA/refA/refB or other sequences', metavar='Gene sequences')
+parser.add_argument('--hit_percent_id', type=int, help='Minimum acceptable hit percent id [%(default)s]', default=80, metavar='INT')
+parser.add_argument('--min_hit_length', type=int, help='Minimum acceptable hit length expressed as percentage of gene length [%(default)s]', default=100, metavar='INT')
+parser.add_argument('--no_random_gene', help="Will only look for genes given", action='store_false', default=True)
+parser.add_argument('--no_rename', help="Do not rename contigs to indicate chromosome/plasmid", action='store_false', default=True)
+parser.add_argument('--debug', help="Keep all temp files", action='store_true', default=False)
+		 
+options = parser.parse_args()
+
+break_finder = contig_break_finder.ContigBreakFinder(fasta_file = options.fasta_file,
+													 gene_file = options.gene_file,
+													 hit_percent_id = options.hit_percent_id,
+													 match_length_percent = options.min_hit_length,
+													 choose_random_gene = options.no_random_gene,
+													 rename = options.no_rename,
+													 debug = options.debug
+													)	
+
+break_finder.run()

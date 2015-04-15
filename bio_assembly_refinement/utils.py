@@ -1,5 +1,5 @@
 '''
-Helper functions like deleting files and running nucmer
+Helper functions like deleting files, running nucmer and finding break point
 '''
 
 import os
@@ -68,7 +68,5 @@ def run_prodigal_and_get_start_of_a_gene(sequence):
 	delete('tmp_genes.gff')
 	delete('tmp_seq.fa')
 	return gene_start		
-    	
 	
 
-	

@@ -22,7 +22,7 @@ class TestCircularisation(unittest.TestCase):
 						 "contig5": "TATCGAGTATATTATCAACTGTACCCCCTCCGACGCATATAATTATGAAAATGGCTCTAT", # 4 base overlap at the very ends, dnaA absent
 						 # Do not circularise
 					 	 "contig6": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # Overlap smaller than min length of 3 
-					 	 "contig7": "AAGTCGGTAGCTTGGCATACGTTACGTATTACGCCCACTTTGTAGAAACTACCGGCTGAA", # 6 base overlap, no dnaA (trimmed length would be too small)					 	
+					 	 "contig7": "AAGTCGGTAGCTTGGCATACGTTACGTATTACGCCCACTTTGTAGAAATCGATGGCTGAA", # 6 base overlap, no dnaA (trimmed length would be too small)					 	
 					 	 "contig8": "GCTTATCGAGTATAACTGGACCGCCTCCGACGCATATAATTATGAAAATGGCTCTATCTA", # 4 base overlap but reversed (ignore)
 					 	 "contig9": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # No overlap
 					 	 "contig10": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # Overlap start beyond offset				 	  
@@ -35,7 +35,7 @@ class TestCircularisation(unittest.TestCase):
 				 	 		   '\t'.join(['1', '3', '58', '60', '3', '3', '100.00', '60', '60', '1', '1', 'contig4', 'contig4']),		 	 		   
 				 	 		   '\t'.join(['1', '4', '57', '60', '4', '4', '100.00', '60', '60', '1', '1', 'contig5', 'contig5']),				 	 		   
 				 	 		   '\t'.join(['1', '2', '59', '60', '2', '2', '100.00', '60', '60', '1', '1', 'contig6', 'contig6']),				 	 		   
-				 	 		   '\t'.join(['1', '6', '55', '60', '6', '6', '100.00', '60', '60', '1', '1', 'contig7', 'contig7']),				 	 		   
+				 	 		   '\t'.join(['1', '12', '49', '60', '12', '12', '100.00', '60', '60', '1', '1', 'contig7', 'contig7']),				 	 		   
 				 	 		   '\t'.join(['13', '15', '57', '54', '4', '4', '100.00', '60', '60', '1', '-1', 'contig8', 'contig8']),
 				 	 		   # No overlap for contig 9
 				 	 		   '\t'.join(['4', '7', '36', '38', '4', '4', '100.00', '60', '60', '1', '-1', 'contig10', 'contig10']),
@@ -65,6 +65,13 @@ class TestCircularisation(unittest.TestCase):
 								"contig3": "GGACCGCCTCCGACGCATATAATTATGAAAATGGCTCTAGAGTATATTATCAACT", # chromosome3
 								"contig4": "GGACCGCCTCCGACGCATATAATTATGAAAATGCTACTATCGAGTATATTATCAACT", # chromosome4
 								"contig5": "GAGTATATTATCAACTGTACCCCCTCCGACGCATATAATTATGAAAATGGCTCTAT", # plasmid1	
+								
+								# Following contigs should not have changed
+								"contig6": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # Overlap smaller than min length of 3 
+					 	 		"contig7": "AAGTCGGTAGCTTGGCATACGTTACGTATTACGCCCACTTTGTAGAAATCGATGGCTGAA", # 6 base overlap, no dnaA (trimmed length would be too small)					 	
+					 			"contig8": "GCTTATCGAGTATAACTGGACCGCCTCCGACGCATATAATTATGAAAATGGCTCTATCTA", # 4 base overlap but reversed (ignore)
+					 	 		"contig9": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # No overlap
+					 	 		"contig10": "AGTCCACCGGGCACTGCAAGGTAAATTCTTACGCCCACTTTGTAGACCCTACCGTAAAGC", # Overlap start beyond offset				 	  
 								}
 		# Output data
 		expected_output = os.path.join(data_dir, "circularised_test_contigs.fa")
@@ -77,16 +84,12 @@ class TestCircularisation(unittest.TestCase):
 												       dnaA_alignments = test_dnaA_alignments,
 												       overlap_offset = 10,
 												       overlap_min_length=3,
-												       overlap_max_length=8,
+												       overlap_max_length=12,
 												       debug = False											       
 												      )
 	
 		circulariser.run()
 		output_contigs = circulariser.contigs
-		
-				
-# 		self.assertTrue(filecmp.cmp(actual_output, expected_output, shallow=False)) 
-# 		If the contigs are of equal size there is no guarantee as to which order they will be put in by fastaq sort. So, checking contig sequences one by one.
 		
 		for id in circularised_contigs.keys():		
 			self.assertEqual(circularised_contigs[id], output_contigs[id])
@@ -95,16 +98,3 @@ class TestCircularisation(unittest.TestCase):
 		os.remove(actual_output)
 		os.remove(summary_file)
 		
-		
-	def test_circularisation_with_fasta_file(self):	
-		# Does constructor take fasta file?
-		input_file = os.path.join(data_dir, "Salmonella_pacbio_unitig_0.fa")
-		dnaA_file = os.path.join(data_dir, "dnaA.fa")
-		output_file = os.path.join(os.getcwd(), "circularised_Salmonella_pacbio_unitig_0.fa")	
-		summary_file = os.path.join(os.getcwd(), 'circularisation_summary_file.txt')	
-		circulariser = circularisation.Circularisation(dnaA_sequence = dnaA_file, fasta_file=input_file)
-		circulariser.run()
-		self.assertTrue(os.path.isfile(output_file))# Does output file exist and is it named right? 
-		self.assertTrue(os.path.isfile(summary_file))# Does summary file exist and is it named right? 
-		os.remove(output_file)
-		os.remove(circulariser.summary_file)

@@ -51,6 +51,7 @@ class Main:
 				overlap_min_length=1000,
 				overlap_max_length=3000,
 				overlap_percent_identity=85,
+				min_trim_length = 0.89,
 				dnaA_hit_percent_identity=80,
 				dnaA_hit_length_minimum=65,		
 				no_bsub = False,	
@@ -71,6 +72,7 @@ class Main:
 		self.overlap_min_length = overlap_min_length
 		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
+		self.min_trim_length = min_trim_length
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
 		self.no_bsub = no_bsub
@@ -99,13 +101,14 @@ class Main:
 		circulariser = circularisation.Circularisation(fasta_file = ccleaner.output_file, # Need the filename to retain naming scheme even though we pass in pre-computed contigs
 													   dnaA_sequence = self.dnaA_sequence,
 													   working_directory = self.working_directory,
-													   contigs = ccleaner.filtered_contigs,
+													   contigs = ccleaner.contigs,
 												       alignments = ccleaner.alignments,
 												       overlap_offset = self.overlap_offset,
 												       overlap_boundary_max = self.overlap_boundary_max,
 												       overlap_min_length = self.overlap_min_length,
 												       overlap_max_length = self.overlap_max_length,
 												       overlap_percent_identity = self.overlap_percent_identity,
+												       min_trim_length = self.min_trim_length,
 												       dnaA_hit_percent_identity = self.dnaA_hit_percent_identity,
 												       dnaA_hit_length_minimum = self.dnaA_hit_length_minimum,
 												       summary_file = self.summary_file,
@@ -114,18 +117,18 @@ class Main:
 												      
 		circulariser.run()      
 				
-		 
-		reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
-											read_data=self.bax_files,
-											pacbio_exec=self.pacbio_exec,
-											no_bsub = self.no_bsub,
-											working_directory = self.working_directory,
-											output_directory = self.reassembly_dir,
-											summary_file = self.summary_file,
-											debug = self.debug
-											)
+		if os.path.exists(circulariser.output_file):
+			reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
+												read_data=self.bax_files,
+												pacbio_exec=self.pacbio_exec,
+												no_bsub = self.no_bsub,
+												working_directory = self.working_directory,
+												output_directory = self.reassembly_dir,
+												summary_file = self.summary_file,
+												debug = self.debug
+												)
 											
-		reassembler.run()
+			reassembler.run()
 		
 		if not self.debug:
 			utils.delete(ccleaner.output_file)

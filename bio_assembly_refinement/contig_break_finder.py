@@ -21,6 +21,7 @@ class ContigBreakFinder:
 	def __init__(self, 
 			     fasta_file, 
 			     gene_file, 
+			     avoid=None, #Avoid circularising contigs with these ids
 			     hit_percent_id=80, 
 			     match_length_percent=100, 
 			     choose_random_gene=True, 
@@ -39,6 +40,18 @@ class ContigBreakFinder:
 		self.summary_file = summary_file
 		self.output_file = self._build_final_filename()
 		self.debug = debug
+		
+		self.ids_to_avoid = set()		
+		if avoid:
+			if isinstance(avoid, str) and os.path.isfile(avoid):			
+				f = fastaqutils.open_file_read(avoid)
+				for line in f:
+					self.ids_to_avoid.add(line.rstrip())
+				fastaqutils.close(f)
+			else:
+				self.ids_to_avoid = set(avoid) # Assumes ids_avoid is a list
+		
+		
 
 
 	def _run_prodigal_and_get_start_of_a_gene(self, sequence):
@@ -86,49 +99,52 @@ class ContigBreakFinder:
 		chromosome_count = 1
 		seq_reader = sequences.file_reader(self.fasta_file)
 		output_fw = fastaqutils.open_file_write(self.output_file)
-	
-		for seq in seq_reader:		
-			plasmid = True
-			gene_name = '-'
-			gene_on_reverse_strand = False
-			new_name = ''
-			break_point = 0
+		print("Ids to not circiularise")
+		print(self.ids_to_avoid)
+		for seq in seq_reader:
+			if seq.id not in self.ids_to_avoid:		
+				plasmid = True
+				gene_name = '-'
+				gene_on_reverse_strand = False
+				new_name = ''
+				break_point = 0
 				
-			for algn in self.dnaA_alignments:			
-				if algn.ref_name == seq.id and \
-				   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
-				   algn.percent_identity >= self.hit_percent_id and \
-				   algn.qry_start == 0:	     
-					plasmid = False
-					gene_name = algn.qry_name
-					if algn.on_same_strand():
-						break_point = algn.ref_start						
-					else:
-						# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-						seq.seq = seq.seq.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
-						break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
-						dnaA_on_reverse_strand = True
+				for algn in self.dnaA_alignments:			
+					if algn.ref_name == seq.id and \
+					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
+					   algn.percent_identity >= self.hit_percent_id and \
+					   algn.qry_start == 0:	     
+						plasmid = False
+						gene_name = algn.qry_name
+						if algn.on_same_strand():
+							break_point = algn.ref_start						
+						else:
+							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
+							seq.seq = seq.seq.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
+							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
+							dnaA_on_reverse_strand = True
 					
-					seq.seq = seq.seq[break_point:] + seq.seq[0:break_point]		
-					new_name = 'chromosome' + str(chromosome_count)
-					chromosome_count += 1		
-					break;
+						seq.seq = seq.seq[break_point:] + seq.seq[0:break_point]		
+						new_name = 'chromosome' + str(chromosome_count)
+						chromosome_count += 1		
+						break;
 					
-			if plasmid:
-				if len(seq.seq) < 200000: # Only rename if it's roughly plasmid size
-					new_name = 'plasmid' + str(plasmid_count)
-					plasmid_count += 1
-				if self.choose_random_gene and len(seq.seq) > 20000:
-					# If suitable, choose random gene in plasmid, and circularise. Prodigal only works for contigs > 20000 bases				
-					gene_start = self._run_prodigal_and_get_start_of_a_gene(seq.seq)
-					if gene_start:
-						seq.seq = seq.seq[gene_start:] + seq.seq[0:gene_start]	
-						break_point = gene_start
-						gene_name = 'predicted_gene'
+				if plasmid:
+					if len(seq.seq) < 200000: # Only rename if it's roughly plasmid size
+						new_name = 'plasmid' + str(plasmid_count)
+						plasmid_count += 1
+					if self.choose_random_gene and len(seq.seq) > 20000:
+						# If suitable, choose random gene in plasmid, and circularise. Prodigal only works for contigs > 20000 bases				
+						gene_start = self._run_prodigal_and_get_start_of_a_gene(seq.seq)
+						if gene_start:
+							seq.seq = seq.seq[gene_start:] + seq.seq[0:gene_start]	
+							break_point = gene_start
+							gene_name = 'predicted_gene'
 					
-			contig_name = new_name if self.rename else seq.id
-			print(sequences.Fasta(contig_name, seq.seq), file=output_fw)
-			self._write_summary(seq.id, break_point, gene_name, gene_on_reverse_strand, new_name)
+				contig_name = new_name if self.rename else seq.id
+				print(sequences.Fasta(contig_name, seq.seq), file=output_fw)
+				self._write_summary(seq.id, break_point, gene_name, gene_on_reverse_strand, new_name)
+				
 		output_fw.close()
 		
 		if not self.debug:

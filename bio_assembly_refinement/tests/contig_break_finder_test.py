@@ -10,9 +10,14 @@ class TestContigBreakFinder(unittest.TestCase):
 	def test_finding_dnaA(self):
 		test_dnaA_file = os.path.join(data_dir, "test_dnaA.fa")
 		test_fasta_file = os.path.join(data_dir, "test_fasta_file.fa")
+		ids_file = os.path.join(data_dir, "ids_to_avoid.txt")
 		break_finder = contig_break_finder.ContigBreakFinder(fasta_file = test_fasta_file,
-														 gene_file = test_dnaA_file								       
-												        )	
+														     gene_file = test_dnaA_file,
+														     avoid = ids_file,														     								       
+												            )	
 		break_finder.run()
+		#Complete tests
+		
+		
 	
 	

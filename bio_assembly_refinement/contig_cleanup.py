@@ -37,6 +37,7 @@ class ContigCleanup:
 				 ids = [],
 				 summary_file="contig_filtration_summary.txt",
 				 debug=False):
+				 
 		''' Constructor '''
 		self.fasta_file = fasta_file
 		self.working_directory = working_directory if working_directory else os.getcwd()			
@@ -79,8 +80,6 @@ class ContigCleanup:
 		os.chdir(self.working_directory)
 		small_contigs = set()
 		contained_contigs = set()
-		print("ids to keep")
-		print(self.ids_to_keep)
 		for id in self.contigs.keys():
 			if not id in self.ids_to_keep:
 				if len(self.contigs[id]) < self.cutoff_contig_length:

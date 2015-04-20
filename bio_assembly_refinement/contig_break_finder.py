@@ -99,14 +99,12 @@ class ContigBreakFinder:
 		chromosome_count = 1
 		seq_reader = sequences.file_reader(self.fasta_file)
 		output_fw = fastaqutils.open_file_write(self.output_file)
-		print("Ids to not circiularise")
-		print(self.ids_to_avoid)
 		for seq in seq_reader:
 			if seq.id not in self.ids_to_avoid:		
 				plasmid = True
 				gene_name = '-'
 				gene_on_reverse_strand = False
-				new_name = ''
+				new_name = seq.id #Stick with old name if no new name comes along
 				break_point = 0
 				
 				for algn in self.dnaA_alignments:			

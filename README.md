@@ -1,7 +1,7 @@
 bio\_assembly\_refinement
 =======================
 
-Modules to filter, circularise and re-assemble contigs, mostly useful for (but not limited to) bacterial assemblies
+Modules to filter, trim, circularise and re-assemble contigs, mostly useful for (but not limited to) draft bacterial assemblies using long read data (e.g. pacbio)
 
 Description
 -----------
@@ -9,10 +9,11 @@ Description
 Given a fasta file, these modules can be used to:
 
 1. Filter out contigs smaller than a set length, and those completely contained within other contigs
-2. Circularise contigs by trimming overlaps and setting the start of the conserved dnaA gene (or other genes in the case of plasmids) as the start of the sequence
+2. Identify and trim overlaps between ends of contigs
+2. Circularise contigs by setting its start to be the start of the conserved dnaA gene (or other genes in the case of plasmids) 
 3. Run quiver (pacbio_smrtanalysis script) on the new circularised contigs to refine them, particularly around the new joins
 
-There is also a script that can be used to invoke this functionality on the command line
+There are also scripts that can be used to call these functions is on the command line
 
 Installation
 ------------

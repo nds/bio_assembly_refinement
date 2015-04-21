@@ -44,7 +44,7 @@ class ContigCleanup:
 		self.working_directory = working_directory if working_directory else os.getcwd()			
 		self.cutoff_contig_length = cutoff_contig_length
 		self.percent_match = percent_match
-		self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_nucmer_filename())
+		self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_nucmer_filename(), min_percent_id=percent_match)
 		self.summary_file = summary_file
 		self.debug = debug		
 		self.contigs = {}

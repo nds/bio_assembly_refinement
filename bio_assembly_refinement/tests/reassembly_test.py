@@ -11,7 +11,7 @@ class TestReassembly(unittest.TestCase):
 	def test_reassembly(self):
 		'''Test reassembly'''
 		
-		test_file = os.path.join(data_dir, "test_fasta_file.fa")
+		test_file = os.path.join(data_dir, "CLEANUP_input_1.fa")
 		summary_file = os.path.join(os.getcwd(), "smrtanalysis_summary.txt")
 		
 		reassembler = reassembly.Reassembly(input_file=test_file,

@@ -45,7 +45,7 @@ class ContigOverlapTrimmer:
 				 overlap_max_length=3000,
 				 overlap_percent_identity=85,
 				 min_trim_length=0.89,
-				 summary_file = "circularisation_summary_file.txt",			  
+				 summary_file = "contig_trimming_summary.txt",			  
 				 debug=False):
 
 		''' Constructor '''
@@ -152,7 +152,7 @@ class ContigOverlapTrimmer:
 	def run(self):	
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)	
-		output_fw = fastaqutils.open_file_write(self._build_intermediate_filename())
+		output_fw = fastaqutils.open_file_write(self.output_file)
 		for contig_id in self.contigs.keys():
 			#Look for overlaps, trim if applicable
 			best_overlap = self._find_best_overlap(contig_id)
@@ -161,12 +161,12 @@ class ContigOverlapTrimmer:
 				trim_status = self._trim(contig_id, best_overlap)
 			self._write_summary(contig_id, best_overlap, trim_status)
 			print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)	
-					
-		tasks.sort_by_size(self._build_intermediate_filename(), self.output_file) # Sort contigs in final file according to size
+		fastaqutils.close(output_fw)			
+# 		tasks.sort_by_size(self._build_intermediate_filename(), self.output_file) # Sort contigs in final file according to size
 		
 		if not self.debug:
 			utils.delete(self._build_alignments_filename())
-			utils.delete(self._build_intermediate_filename())
+# 			utils.delete(self._build_intermediate_filename())
 
 		os.chdir(original_dir)
 		

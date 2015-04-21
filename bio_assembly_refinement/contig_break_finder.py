@@ -3,10 +3,28 @@ Find the point at which to break a circular contig (at origin of replication or 
 
 Attributes:
 -----------
+fasta_file : input fasta file name
+gene_file : file with genes (e.g. dnaA)
+skip : list or file of contig ids to skip (i.e. do not break at gene location)
+hit_percent_id : min percent identity of matches to gene
+match_length_percent : min length of ref match expressed as % of gene length (default 80%)
+choose_random_gene : if genes in file cannot be found, run prodigal and find random gene (default True)
+rename : rename contigs (default True)
+working_directory : path to working directory (default to current working directory)
+summary_file : summary file
+debug : do not delete temp files if set to true (default false)
 
 Sample usage:
 -------------
 
+from bio_assembly_refinement import contig_break_finder
+
+break_finder = contig_break_finder.ContigBreakFinder(fasta_file = myfasta_file,
+													 gene_file = mydnaA_file,													     								       
+												     )
+break_finder.run()
+break_finder.output_file will be the cleaned fasta file
+break_finder.summary_file will be the summary file
 '''
 
 import os
@@ -14,6 +32,7 @@ import shutil
 from bio_assembly_refinement import utils
 from pyfastaq import sequences
 from pyfastaq import utils as fastaqutils
+from pyfastaq import tasks
 from pymummer import alignment
 
 
@@ -21,7 +40,7 @@ class ContigBreakFinder:
 	def __init__(self, 
 			     fasta_file, 
 			     gene_file, 
-			     avoid=None, #Avoid circularising contigs with these ids
+			     skip=None, #Avoid circularising contigs with these ids
 			     hit_percent_id=80, 
 			     match_length_percent=100, 
 			     choose_random_gene=True, 
@@ -40,40 +59,42 @@ class ContigBreakFinder:
 		self.summary_file = summary_file
 		self.output_file = self._build_final_filename()
 		self.debug = debug
+		self.contigs = {}
+		tasks.file_to_dict(self.fasta_file, self.contigs) #Read contig ids and sequences into dict
+		# run promer
+		self.dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, self._build_promer_filename(), min_percent_id=self.hit_percent_id, run_promer=True)
+		self.random_gene_starts = {}
+		if self.choose_random_gene:
+			self._run_prodigal_and_get_gene_starts()
 		
-		self.ids_to_avoid = set()		
-		if avoid:
-			if isinstance(avoid, str) and os.path.isfile(avoid):			
-				f = fastaqutils.open_file_read(avoid)
-				for line in f:
-					self.ids_to_avoid.add(line.rstrip())
-				fastaqutils.close(f)
+		self.ids_to_skip = set()		
+		if skip:
+			if isinstance(skip, str) and os.path.isfile(skip):			
+				fh = fastaqutils.open_file_read(skip)
+				for line in fh:
+					self.ids_to_skip.add(line.rstrip())
+				fastaqutils.close(fh)
 			else:
-				self.ids_to_avoid = set(avoid) # Assumes ids_avoid is a list
+				self.ids_to_skip = set(skip) # Assumes ids is a list
+	
 		
-		
-
-
-	def _run_prodigal_and_get_start_of_a_gene(self, sequence):
-		'''Run prodigal and find start of a gene''' 
-		output_fw = fastaqutils.open_file_write("tmp_seq.fa")
-		print(sequences.Fasta("contig", sequence), file=output_fw)
-		output_fw.close()
-		fastaqutils.syscall("prodigal -i tmp_seq.fa -o tmp_genes.gff -f gff -c")	
-		boundary_start = round(0.3 * len(sequence)) # Look for a gene that starts after 30% of the sequence length 
-		gene_start = 0
+	def _run_prodigal_and_get_gene_starts(self):
+		'''Run prodigal and find gene starts''' 
+		gene_starts = {}
+		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q")	# run on whole fasta as prodgal works better with larger sequences
 		fh = fastaqutils.open_file_read('tmp_genes.gff')
 		for line in fh:
 			if not line.startswith("#"):
 				columns = line.split('\t')
 				start_location = int(columns[3])
-				if start_location > boundary_start:
-					gene_start = start_location - 1 #Interbase
-					break; 
+				contig_id = columns[0]
+				boundary_start = round(0.4 * len(self.contigs[contig_id]))
+				boundary_end = round(0.6 * len(self.contigs[contig_id]))
+				if start_location > boundary_start and start_location < boundary_end:
+					gene_starts[contig_id] = start_location - 1 #Interbase				
 		if not self.debug:   		
 			utils.delete('tmp_genes.gff')
-			utils.delete('tmp_seq.fa')
-		return gene_start	
+		return gene_starts	
 		
 		
 	def _build_final_filename(self):
@@ -81,6 +102,16 @@ class ContigBreakFinder:
 		input_filename = os.path.basename(self.fasta_file)
 		return os.path.join(self.working_directory, "circularised_" + input_filename)
 		
+		
+	def _build_promer_filename(self):
+		'''Build temp promer filename'''
+		return os.path.join(self.working_directory, "promer_dnaA_hits.coords")
+		
+		
+	def _build_prodigal_filename(self):
+		'''Build temp prodigal filename'''
+		return os.path.join(self.working_directory, "prodigal_genes.gff")
+	
 		
 	def _write_summary(self, contig_id, break_point, gene_name, gene_reversed, new_name):
 		'''Write summary'''
@@ -93,57 +124,54 @@ class ContigBreakFinder:
 	
 
 	def run(self):
-		'''Look for break point in contigs. If found, circularise and rename contig. Write to a log.'''	
-		self.dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, "gene.hits", min_percent_id=self.hit_percent_id, run_promer=True)
-		plasmid_count = 1
+		'''Look for break point in contigs and rename if needed'''	
+		
 		chromosome_count = 1
-		seq_reader = sequences.file_reader(self.fasta_file)
+		plasmid_count = 1
 		output_fw = fastaqutils.open_file_write(self.output_file)
-		for seq in seq_reader:
-			if seq.id not in self.ids_to_avoid:		
-				plasmid = True
+		for contig_id in self.contigs:
+			if contig_id not in self.ids_to_skip:		
+				dnaA_found = False
 				gene_name = '-'
 				gene_on_reverse_strand = False
-				new_name = seq.id #Stick with old name if no new name comes along
-				break_point = 0
+				new_name = contig_id #Stick with old name if no new name comes along
+				break_point = '-'
 				
 				for algn in self.dnaA_alignments:			
-					if algn.ref_name == seq.id and \
+					if algn.ref_name == contig_id and \
 					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
 					   algn.percent_identity >= self.hit_percent_id and \
 					   algn.qry_start == 0:	     
-						plasmid = False
+						dnaA_found = True
 						gene_name = algn.qry_name
 						if algn.on_same_strand():
 							break_point = algn.ref_start						
 						else:
 							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-							seq.seq = seq.seq.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
+							self.contigs[contig_id] = self.contigs[contig_id].translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
 							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
 							dnaA_on_reverse_strand = True
 					
-						seq.seq = seq.seq[break_point:] + seq.seq[0:break_point]		
-						new_name = 'chromosome' + str(chromosome_count)
+						self.contigs[contig_id] = self.contigs[contig_id][break_point:] + self.contigs[contig_id][0:break_point]		
+						new_name = 'chromosome_' + str(chromosome_count)
 						chromosome_count += 1		
 						break;
 					
-				if plasmid:
-					if len(seq.seq) < 200000: # Only rename if it's roughly plasmid size
-						new_name = 'plasmid' + str(plasmid_count)
+				if not dnaA_found:
+					if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
+						new_name = 'plasmid_' + str(plasmid_count)
 						plasmid_count += 1
-					if self.choose_random_gene and len(seq.seq) > 20000:
-						# If suitable, choose random gene in plasmid, and circularise. Prodigal only works for contigs > 20000 bases				
-						gene_start = self._run_prodigal_and_get_start_of_a_gene(seq.seq)
-						if gene_start:
-							seq.seq = seq.seq[gene_start:] + seq.seq[0:gene_start]	
-							break_point = gene_start
-							gene_name = 'predicted_gene'
-					
-				contig_name = new_name if self.rename else seq.id
-				print(sequences.Fasta(contig_name, seq.seq), file=output_fw)
-				self._write_summary(seq.id, break_point, gene_name, gene_on_reverse_strand, new_name)
+					if self.choose_random_gene and self.gene_starts[contig_id]:			
+						break_point = self.gene_starts[contig_id]
+						self.contigs[contig_id] = self.contigs[contig_id][break_point:] + self.contigs[contig_id][0:break_point]
+						gene_name = 'prodigal'
+				
+				contig_name = new_name if self.rename else contig_id
+				print(sequences.Fasta(contig_name, self.contigs[contig_id]), file=output_fw)
+				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name)
 				
 		output_fw.close()
 		
 		if not self.debug:
-			utils.delete("nucmer_gene.hits")
+			utils.delete(self._build_promer_filename())
+			utils.delete(self._build_prodigal_filename())

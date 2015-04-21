@@ -37,7 +37,7 @@ contigs_removed = ccleaner.get_filtered_contigs()
 import os
 import tempfile
 import shutil
-import bio_assembly_refinement 
+from bio_assembly_refinement import contig_cleanup, contig_break_finder, contig_overlap_trimmer, reassembly, utils
 
 class Main:
 	def __init__(self,
@@ -65,7 +65,7 @@ class Main:
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 
 				reassembly_dir = "improved_assembly",
-				summary_file = "pacbio_postprocess_summary.txt",
+				summary_file = "assembly_refinement_summary.txt",
 				debug = False
 				):
 		self.fasta_file = fasta_file 
@@ -126,18 +126,18 @@ class Main:
 		contig_trimmer.run()      
 				
 		if os.path.exists(contig_trimmer.output_file):
-			contig_break_finder = contig_break_fonder.ContigBreakFinder(fasta_file = contig_trimmer.output_file, 
-																		gene_file = self.dnaA_sequence,
-																		hit_percent = self.dnaA_hit_percent_identity,
-																		match_length_percent = self.dnaA_hit_length_minimum,
-																		working_directory = self.working_directory,
-																		debug = self.debug
-																		)
-			contig_break_finder.run()	
+			contig_breaker = contig_break_finder.ContigBreakFinder(fasta_file = contig_trimmer.output_file, 
+																   gene_file = self.dnaA_sequence,
+																   hit_percent_id = self.dnaA_hit_percent_identity,
+																   match_length_percent = self.dnaA_hit_length_minimum,
+																   working_directory = self.working_directory,
+																   debug = self.debug
+																  )
+			contig_breaker.run()	
 			
 
-		if os.path.exists(contig_break_finder.output_file):
-			reassembler = reassembly.Reassembly(input_file=contig_break_finder.output_file,
+		if os.path.exists(contig_breaker.output_file):
+			reassembler = reassembly.Reassembly(input_file=contig_breaker.output_file,
 												read_data=self.bax_files,
 												pacbio_exec=self.pacbio_exec,
 												no_bsub = self.no_bsub,
@@ -151,7 +151,7 @@ class Main:
 		if not self.debug:
 			utils.delete(ccleaner.output_file)
 			utils.delete(contig_trimmer.output_file)
-#			utils.delete(contig_break_finder.output_file) # delete after bsub quiver has finished (to implement)
+#			utils.delete(contig_breaker.output_file) # delete after bsub quiver has finished (to implement)
 
 		
 		os.chdir(original_dir)

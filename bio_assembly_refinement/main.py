@@ -37,52 +37,64 @@ contigs_removed = ccleaner.get_filtered_contigs()
 import os
 import tempfile
 import shutil
-from bio_assembly_refinement import contig_cleanup, circularisation, reassembly, utils
+from bio_assembly_refinement import contig_cleanup, contig_break_finder, contig_overlap_trimmer, reassembly, utils
 
 class Main:
 	def __init__(self,
 				fasta_file, 
 				dnaA_sequence, 
-				bax_files,
+				bax_files,  
+				# clean up arguments
 				cutoff_contig_length=10000,
 				contained_percent_match=95,
+				# trimming arguments
 				overlap_offset=1000, 
 				overlap_boundary_max=50, 
 				overlap_min_length=1000,
 				overlap_max_length=3000,
 				overlap_percent_identity=85,
-				min_trim_length = 0.89,
+				min_trim_length = 0.8,
+				trim = True,
+				trim_reversed_overlaps = False,
+				# contig breaker arguments
 				dnaA_hit_percent_identity=80,
 				dnaA_hit_length_minimum=65,		
 				no_bsub = False,	
-				working_directory=None, 
+				# general arguments
+				working_directory=None,
 				pacbio_exec = "pacbio_smrtanalysis", 
 				nucmer_exec = "nucmer", 
 				reassembly_dir = "improved_assembly",
-				summary_file = "pacbio_postprocess_summary.txt",
+				summary_file = "assembly_refinement_summary.txt",
 				debug = False
 				):
 		self.fasta_file = fasta_file 
 		self.dnaA_sequence = dnaA_sequence
 		self.bax_files = bax_files
+		#clean up arguments
 		self.cutoff_contig_length = cutoff_contig_length
 		self.contained_percent_match = contained_percent_match
+		# trimming arguments
 		self.overlap_offset = overlap_offset 
 		self.overlap_boundary_max = overlap_boundary_max
 		self.overlap_min_length = overlap_min_length
 		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.min_trim_length = min_trim_length
+		self.trim = trim
+		self.trim_reversed_overlaps = trim_reversed_overlaps
+		# contig break arguments
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
 		self.no_bsub = no_bsub
+		# general arguments
 		self.working_directory = working_directory if working_directory else os.getcwd()	 
 		self.pacbio_exec = pacbio_exec
 		self.nucmer_exec = nucmer_exec 
 		self.reassembly_dir = reassembly_dir
 		self.summary_file = summary_file
 		self.debug = debug   		
-
+		
 
 	def process_assembly(self):
 		'''Run three steps: clean contigs, trim & circularise, run pacbio resequencing'''	
@@ -90,41 +102,47 @@ class Main:
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
 		
+		# Step 1: Clean
 		ccleaner = contig_cleanup.ContigCleanup(fasta_file = self.fasta_file,
 												working_directory = self.working_directory, 
 												cutoff_contig_length=self.cutoff_contig_length,
 												percent_match = self.contained_percent_match,
-												summary_file = self.summary_file,
 												debug = self.debug)
 		ccleaner.run()
 		
-		circulariser = circularisation.Circularisation(fasta_file = ccleaner.output_file, # Need the filename to retain naming scheme even though we pass in pre-computed contigs
-													   dnaA_sequence = self.dnaA_sequence,
+		contig_trimmer = contig_overlap_trimmer.ContigOverlapTrimmer(fasta_file = ccleaner.output_file, 
 													   working_directory = self.working_directory,
-													   contigs = ccleaner.contigs,
 												       alignments = ccleaner.alignments,
+												       trim = self.trim,
+				 									   trim_reversed_overlaps = self.trim_reversed_overlaps,
 												       overlap_offset = self.overlap_offset,
 												       overlap_boundary_max = self.overlap_boundary_max,
 												       overlap_min_length = self.overlap_min_length,
 												       overlap_max_length = self.overlap_max_length,
 												       overlap_percent_identity = self.overlap_percent_identity,
 												       min_trim_length = self.min_trim_length,
-												       dnaA_hit_percent_identity = self.dnaA_hit_percent_identity,
-												       dnaA_hit_length_minimum = self.dnaA_hit_length_minimum,
-												       summary_file = self.summary_file,
 													   debug = self.debug
-												      )
-												      
-		circulariser.run()      
+												      )												      
+		contig_trimmer.run()      
 				
-		if os.path.exists(circulariser.output_file):
-			reassembler = reassembly.Reassembly(input_file=circulariser.output_file,
+		if os.path.exists(contig_trimmer.output_file):
+			contig_breaker = contig_break_finder.ContigBreakFinder(fasta_file = contig_trimmer.output_file, 
+																   gene_file = self.dnaA_sequence,
+																   hit_percent_id = self.dnaA_hit_percent_identity,
+																   match_length_percent = self.dnaA_hit_length_minimum,
+																   working_directory = self.working_directory,
+																   debug = self.debug
+																  )
+			contig_breaker.run()	
+			
+
+		if os.path.exists(contig_breaker.output_file):
+			reassembler = reassembly.Reassembly(input_file=contig_breaker.output_file,
 												read_data=self.bax_files,
 												pacbio_exec=self.pacbio_exec,
 												no_bsub = self.no_bsub,
 												working_directory = self.working_directory,
 												output_directory = self.reassembly_dir,
-												summary_file = self.summary_file,
 												debug = self.debug
 												)
 											
@@ -132,7 +150,9 @@ class Main:
 		
 		if not self.debug:
 			utils.delete(ccleaner.output_file)
-# 			utils.delete(circulariser.get_results_file()) #Only delete once code added to wait for bsub to finish
+			utils.delete(contig_trimmer.output_file)
+#			utils.delete(contig_breaker.output_file) # delete after bsub quiver has finished (to implement)
+
 		
 		os.chdir(original_dir)
    		 

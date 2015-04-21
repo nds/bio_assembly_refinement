@@ -1,6 +1,7 @@
 __all__ = [ 'contig_cleanup',
+			'contig_overlap_trimmer',
 			'contig_break_finder',
-			'circularisation',
+			'contig_history',
 			'reassembly',
 			'utils',
 			'main'

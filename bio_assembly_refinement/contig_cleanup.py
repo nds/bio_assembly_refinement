@@ -5,9 +5,9 @@ Attributes:
 -----------
 fasta_file : input fasta file name
 working_directory : path to working directory (default to current working directory)
-cutoff_contig_length : contigs smaller than this will be disregarded (default 10,000)
+cutoff_contig_length : contigs smaller than this will be disregarded 
 percent_match : percent identity of nucmer hit when deciding if contig is contained in another
-ids : list of contig ids to keep no matter what (file or list)
+ids : contig ids to keep no matter what (file or list)
 summary_file : summary file
 debug : do not delete temp files if set to true (default false)
 
@@ -18,7 +18,8 @@ from bio_assembly_refinement import contig_cleanup
 
 ccleaner = contig_cleanup.ContigCleanup("myassembly.fa")
 ccleaner.run()
-ccleaner.contigs...
+ccleaner.output_file will be the cleaned fasta file
+ccleaner.summary_file
 
 '''
 

@@ -18,7 +18,7 @@ class TestContigBreakFinder(unittest.TestCase):
  			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"),
                                                                 gene_file = os.path.join(data_dir, "all_dnaA.fa"),
 							      								skip = os.path.join(data_dir, "BREAKING_skip_ids.txt"),	
-							      								choose_random_gene=False, 	
+							      								choose_random_gene=True, 	
                                                               ),
             'BREAKING_Providencia_rustigianni_2.fa' ],
  

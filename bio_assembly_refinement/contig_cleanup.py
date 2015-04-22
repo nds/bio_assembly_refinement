@@ -65,21 +65,18 @@ class ContigCleanup:
 	
 	def _write_summary(self, small_contigs, contained_contigs):
 		'''Write summary'''
-		header = self.summary_prefix + " cleaning " + self.fasta_file + "\n"
+		header = self.summary_prefix + " contig_id\tclean_log\n"
 		utils.write_text_to_file(header, self.summary_file)
-		#small contigs
-		if small_contigs:
-			line = self.summary_prefix + " small contigs removed: " + " ".join(small_contigs) + "\n"
-		else:
-			line = self.summary_prefix + " small contigs removed: " + " (none) \n"
-		utils.write_text_to_file(line, self.summary_file)
-		
-		#contained contigs
-		if contained_contigs:
-			line = self.summary_prefix + " contained contigs removed: " + " ".join(contained_contigs) + "\n"
-		else:
-			line = self.summary_prefix + " contained contigs removed: " + " (none) \n"
-		utils.write_text_to_file(line, self.summary_file)
+		for contig_id in self.contigs.keys():
+			if contig_id in small_contigs:
+				line = self.summary_prefix + " " + contig_id + " small (removed)\n"
+			elif contig_id in contained_contigs:
+				line = self.summary_prefix + " " + contig_id + " contained (removed)\n"
+			elif contig_id in self.ids_to_skip:
+				line = self.summary_prefix + " " + contig_id + " skipped\n"
+			else:
+				line = self.summary_prefix + " " + contig_id + " kept\n"
+			utils.write_text_to_file(line, self.summary_file)
 				
 		
 	def _build_final_filename(self):
@@ -116,10 +113,15 @@ class ContigCleanup:
 					
 			discard = small_contigs.union(contained_contigs)
 			ids_file = utils.write_ids_to_file(discard, "contig.ids.discard")  
-			tasks.filter(self.fasta_file, self.output_file, ids_file=ids_file, invert=True)		
+			tasks.filter(self.fasta_file, self.output_file, ids_file=ids_file, invert=True)	
+				
+			# tasks filter can produce empty file. check and delete
+			if (os.path.exists(self.output_file)) and os.stat(self.output_file).st_size == 0:
+				utils.delete(self.output_file)
+				
 			if not self.debug:
 				utils.delete(ids_file)
 				utils.delete(self._build_nucmer_filename())
-			
+		
 		self._write_summary(small_contigs, contained_contigs)	
 		os.chdir(original_dir)

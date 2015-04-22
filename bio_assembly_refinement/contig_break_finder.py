@@ -46,7 +46,8 @@ class ContigBreakFinder:
 			     choose_random_gene=True, 
 			     rename=True,
 			     working_directory=None,
-			     summary_file = "contig_breaks_summary.txt",			  
+			     summary_file = "contig_breaks_summary.txt",
+			     summary_prefix="[contig break finder]",			  
 				 debug=False):				 
 		''' Attributes '''
 		self.fasta_file = fasta_file
@@ -57,16 +58,12 @@ class ContigBreakFinder:
 		self.rename = rename
 		self.working_directory = working_directory if working_directory else os.getcwd()
 		self.summary_file = summary_file
+		self.summary_prefix = summary_prefix
 		self.output_file = self._build_final_filename()
 		self.debug = debug
 		self.contigs = {}
 		tasks.file_to_dict(self.fasta_file, self.contigs) #Read contig ids and sequences into dict
-		# run promer
-		self.dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, self._build_promer_filename(), min_percent_id=self.hit_percent_id, run_promer=True)
-		self.random_gene_starts = {}
-		if self.choose_random_gene:
-			self.random_gene_starts = self._run_prodigal_and_get_gene_starts()
-		
+
 		self.ids_to_skip = set()		
 		if skip:
 			if type(skip) == set:
@@ -112,73 +109,86 @@ class ContigBreakFinder:
 		return os.path.join(self.working_directory, "prodigal_genes.gff")
 	
 		
-	def _write_summary(self, contig_id, break_point, gene_name, gene_reversed, new_name):
+	def _write_summary(self, contig_id, break_point, gene_name, gene_reversed, new_name, skipped):
 		'''Write summary'''
 		if (not os.path.exists(self.summary_file)) or os.stat(self.summary_file).st_size == 0:
-			header = '\t'.join(['id', 'break_point', 'gene_name', 'gene_reversed', 'new_name']) +'\n'
+			header = self.summary_prefix + " " + '\t'.join(['id', 'break_point', 'gene_name', 'gene_reversed', 'new_name', 'skipped']) +'\n'
 			utils.write_text_to_file(header, self.summary_file)
-		name_to_print = new_name if self.rename else '-'			
-		text = '\t'.join(map(str, [contig_id, break_point, gene_name, gene_reversed, name_to_print])) + '\n'
+			
+		breakpoint_to_print = break_point if break_point > 0 else '-'
+		gene_name_to_print = gene_name if gene_name else '-'
+		gene_reversed_to_print = '-'
+		if gene_reversed:
+			gene_reversed_to_print = 'yes'
+		else:
+			gene_reversed_to_print = 'no' if gene_name else '-'
+		new_name_to_print = '-'
+		if new_name and self.rename:
+			new_name_to_print = new_name
+		skipped_print = 'skipped' if skipped else ''			
+		text = self.summary_prefix + " " + '\t'.join(map(str, [contig_id, breakpoint_to_print, gene_name_to_print, gene_reversed_to_print, new_name_to_print, skipped_print])) + '\n'
 		utils.write_text_to_file(text, self.summary_file)		
 	
 
 	def run(self):
-		'''Look for break point in contigs and rename if needed'''	
-		
-		chromosome_count = 1
-		plasmid_count = 1
-		output_fw = fastaqutils.open_file_write(self.output_file)
-		for contig_id in self.contigs:
-			contig_sequence = self.contigs[contig_id]
-			if contig_id not in self.ids_to_skip:		
-#				print("Working on contig: " + contig_id)
-				dnaA_found = False
-				gene_name = '-'
-				gene_on_reverse_strand = False
-				new_name = contig_id #Stick with old name if no new name comes along
-				break_point = 0
+		'''Look for break point in contigs and rename if needed'''
+		if len(self.contigs) > len(self.ids_to_skip):
+			# run nucmer and prodigal
+			dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, self._build_promer_filename(), min_percent_id=self.hit_percent_id, run_promer=True)
+			if self.choose_random_gene:
+				random_gene_starts = self._run_prodigal_and_get_gene_starts()
+
+			chromosome_count = 1
+			plasmid_count = 1
+			output_fw = fastaqutils.open_file_write(self.output_file)
+			for contig_id in self.contigs:
+				contig_sequence = self.contigs[contig_id]
+				if contig_id not in self.ids_to_skip:		
+					dnaA_found = False
+					gene_name = '-'
+					gene_on_reverse_strand = None
+					new_name = contig_id #Stick with old name if no new name comes along
+					break_point = 0
 				
-				for algn in self.dnaA_alignments:			
-					if algn.ref_name == contig_id and \
-					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
-					   algn.percent_identity >= self.hit_percent_id and \
-					   algn.qry_start == 0:	     
-#						print("dnaA found")
-						dnaA_found = True
-						gene_name = algn.qry_name
-						if algn.on_same_strand():
-							break_point = algn.ref_start						
-						else:
-							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-#							print("dnaA reversed")
-#							sequence_tmp = str(original_sequence)
-#							original_sequence = sequence_tmp.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
-							contig_sequence.revcomp()
-							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
-							gene_on_reverse_strand = True
-						new_name = 'chromosome_' + str(chromosome_count)
-						chromosome_count += 1		
-						break;
+					for algn in dnaA_alignments:			
+						if algn.ref_name == contig_id and \
+						   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
+						   algn.percent_identity >= self.hit_percent_id and \
+						   algn.qry_start == 0:	     
+							dnaA_found = True
+							gene_name = algn.qry_name
+							if algn.on_same_strand():
+								break_point = algn.ref_start						
+							else:
+								# Reverse complement sequence, circularise using new start of dnaA in the right orientation
+								contig_sequence.revcomp()
+								break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
+								gene_on_reverse_strand = True
+							new_name = 'chromosome_' + str(chromosome_count)
+							chromosome_count += 1		
+							break;
 					
-				if not dnaA_found:
-					if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
-						new_name = 'plasmid_' + str(plasmid_count)
-						plasmid_count += 1
-					if self.choose_random_gene and self.random_gene_starts[contig_id]:			
-						break_point = self.random_gene_starts[contig_id]
-						gene_name = 'prodigal'
+					if not dnaA_found:
+						if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
+							new_name = 'plasmid_' + str(plasmid_count)
+							plasmid_count += 1
+						if self.choose_random_gene and self.random_gene_starts[contig_id]:			
+							break_point = random_gene_starts[contig_id]
+							gene_name = 'prodigal'
 				
-				if break_point > 0:
-#					print("Reorganising sequence")
-					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
-#					print(original_sequence)
+					if break_point > 0:
+						contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
 				
-				contig_name = new_name if self.rename else contig_id
-				print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
-				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name)
+					contig_name = new_name if self.rename else contig_id
+					print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
+					self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name, False)
 				
-		output_fw.close()
+			output_fw.close()
 		
-		if not self.debug:
-			utils.delete(self._build_promer_filename())
-			utils.delete(self._build_prodigal_filename())
+			if not self.debug:
+				utils.delete(self._build_promer_filename())
+				utils.delete(self._build_prodigal_filename())
+		else:
+			for contig_id in self.contigs:
+				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
+			

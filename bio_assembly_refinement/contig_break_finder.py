@@ -92,8 +92,6 @@ class ContigBreakFinder:
 				boundary_end = round(0.6 * len(self.contigs[contig_id]))
 				if start_location > boundary_start and start_location < boundary_end:
 					gene_starts[contig_id] = start_location - 1 #Interbase				
-		if not self.debug:   		
-			utils.delete('tmp_genes.gff')
 		return gene_starts	
 		
 		

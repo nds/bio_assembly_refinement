@@ -69,13 +69,13 @@ class ContigBreakFinder:
 		
 		self.ids_to_skip = set()		
 		if skip:
-			if isinstance(skip, str) and os.path.isfile(skip):			
+			if type(skip) == set:
+				self.ids_to_skip = set(skip) # Assumes ids is a list
+			else:
 				fh = fastaqutils.open_file_read(skip)
 				for line in fh:
 					self.ids_to_skip.add(line.rstrip())
 				fastaqutils.close(fh)
-			else:
-				self.ids_to_skip = set(skip) # Assumes ids is a list
 	
 		
 	def _run_prodigal_and_get_gene_starts(self):

@@ -52,13 +52,13 @@ class ContigCleanup:
 		
 		self.ids_to_skip = set()		
 		if skip:
-			if isinstance(skip, str) and os.path.isfile(skip):			
+			if type(skip) == set:
+				self.ids_to_skip = set(skip) # Assumes ids is a list
+			else:
 				fh = fastaqutils.open_file_read(skip)
 				for line in fh:
 					self.ids_to_skip.add(line.rstrip())
 				fastaqutils.close(fh)
-			else:
-				self.ids_to_skip = set(skip) # Assumes ids is a list
 		self.output_file = self._build_final_filename()		
 	
 	

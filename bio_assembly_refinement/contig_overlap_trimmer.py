@@ -29,7 +29,7 @@ import re
 from pyfastaq import tasks, sequences
 from pyfastaq import utils as fastaqutils
 from pymummer import alignment
-from bio_assembly_refinement import utils, contig_history
+from bio_assembly_refinement import utils
 
 class ContigOverlapTrimmer:
 	def __init__(self, 

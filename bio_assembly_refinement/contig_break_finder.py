@@ -128,30 +128,33 @@ class ContigBreakFinder:
 		plasmid_count = 1
 		output_fw = fastaqutils.open_file_write(self.output_file)
 		for contig_id in self.contigs:
-			original_sequence = self.contigs[contig_id]
+			contig_sequence = self.contigs[contig_id]
 			if contig_id not in self.ids_to_skip:		
+				print("Working on contig: " + contig_id)
 				dnaA_found = False
 				gene_name = '-'
 				gene_on_reverse_strand = False
 				new_name = contig_id #Stick with old name if no new name comes along
-				break_point = '-'
+				break_point = 0
 				
 				for algn in self.dnaA_alignments:			
 					if algn.ref_name == contig_id and \
 					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
 					   algn.percent_identity >= self.hit_percent_id and \
 					   algn.qry_start == 0:	     
+						print("dnaA found")
 						dnaA_found = True
 						gene_name = algn.qry_name
 						if algn.on_same_strand():
 							break_point = algn.ref_start						
 						else:
 							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-							original_sequence = str(original_sequence).translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
+							print("dnaA reversed")
+#							sequence_tmp = str(original_sequence)
+#							original_sequence = sequence_tmp.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
+							contig_sequence.revcomp()
 							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
-							dnaA_on_reverse_strand = True
-					
-						original_sequence = original_sequence[break_point:] + original_sequence[0:break_point]		
+							gene_on_reverse_strand = True
 						new_name = 'chromosome_' + str(chromosome_count)
 						chromosome_count += 1		
 						break;
@@ -162,11 +165,15 @@ class ContigBreakFinder:
 						plasmid_count += 1
 					if self.choose_random_gene and self.random_gene_starts[contig_id]:			
 						break_point = self.random_gene_starts[contig_id]
-						original_sequence = original_sequence[break_point:] + original_sequence[0:break_point]
 						gene_name = 'prodigal'
 				
+				if break_point > 0:
+					print("Reorganising sequence")
+					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
+#					print(original_sequence)
+				
 				contig_name = new_name if self.rename else contig_id
-				print(sequences.Fasta(contig_name, original_sequence), file=output_fw)
+				print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
 				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name)
 				
 		output_fw.close()

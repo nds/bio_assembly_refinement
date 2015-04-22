@@ -92,6 +92,7 @@ class ContigBreakFinder:
 				boundary_end = round(0.6 * len(self.contigs[contig_id]))
 				if start_location > boundary_start and start_location < boundary_end:
 					gene_starts[contig_id] = start_location - 1 #Interbase				
+		fastaqutils.close(fh)
 		return gene_starts	
 		
 		
@@ -130,7 +131,7 @@ class ContigBreakFinder:
 		for contig_id in self.contigs:
 			contig_sequence = self.contigs[contig_id]
 			if contig_id not in self.ids_to_skip:		
-				print("Working on contig: " + contig_id)
+#				print("Working on contig: " + contig_id)
 				dnaA_found = False
 				gene_name = '-'
 				gene_on_reverse_strand = False
@@ -142,14 +143,14 @@ class ContigBreakFinder:
 					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
 					   algn.percent_identity >= self.hit_percent_id and \
 					   algn.qry_start == 0:	     
-						print("dnaA found")
+#						print("dnaA found")
 						dnaA_found = True
 						gene_name = algn.qry_name
 						if algn.on_same_strand():
 							break_point = algn.ref_start						
 						else:
 							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-							print("dnaA reversed")
+#							print("dnaA reversed")
 #							sequence_tmp = str(original_sequence)
 #							original_sequence = sequence_tmp.translate(str.maketrans("ATCGatcg","TAGCtagc"))[::-1]
 							contig_sequence.revcomp()
@@ -168,7 +169,7 @@ class ContigBreakFinder:
 						gene_name = 'prodigal'
 				
 				if break_point > 0:
-					print("Reorganising sequence")
+#					print("Reorganising sequence")
 					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
 #					print(original_sequence)
 				

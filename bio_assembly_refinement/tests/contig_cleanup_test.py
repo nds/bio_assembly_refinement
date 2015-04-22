@@ -33,23 +33,27 @@ class TestContigCleanup(unittest.TestCase):
 		'''Test skipping all contigs'''
 		
 		input_file = os.path.join(data_dir, 'CLEANUP_input_1.fa')
-		skip_ids_file_2 = os.path.join(data_dir, 'CLEANUP_ids_to_skip_2.txt')
+		skip_ids_file_2 = os.path.join(data_dir, 'CLEANUP_ids_to_skip_2.txt') #Skip everything
 		expected_summary_file = os.path.join(data_dir, 'CLEANUP_summary_file.txt')
 		
 		cleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=6, skip=skip_ids_file_2)
 		cleaner.run()
-		self.assertTrue(not os.path.isfile(cleaner.output_file))
+		self.assertTrue(os.path.isfile(cleaner.output_file))
+		self.assertTrue(os.stat(cleaner.output_file).st_size != 0) #should not be empty
 		self.assertTrue(os.path.isfile(cleaner.summary_file))
-# 		self.assertTrue(filecmp.cmp(cleaner.summary_file, expected_summary_file , shallow=False)) 
+# 		self.assertTrue(filecmp.cmp(cleaner.summary_file, expected_summary_file , shallow=False))
+		os.remove(cleaner.output_file) 
 		os.remove(cleaner.summary_file)	
 		
 		input_file = os.path.join(data_dir, 'CLEANUP_input_2.fa')
-		cleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=20)
+		cleaner = contig_cleanup.ContigCleanup(input_file, cutoff_contig_length=20) #all contigs will be too small
 		cleaner.run()
-		self.assertTrue(not os.path.isfile(cleaner.output_file))
+		self.assertTrue(os.path.isfile(cleaner.output_file))
+		self.assertTrue(os.stat(cleaner.output_file).st_size == 0) #now empty
 		self.assertTrue(os.path.isfile(cleaner.summary_file))
 # 		self.assertTrue(filecmp.cmp(cleaner.summary_file, expected_summary_file , shallow=False)) 
 		os.remove(cleaner.summary_file)	
+		os.remove(cleaner.output_file)	
 		
 			
 		

@@ -28,6 +28,7 @@ from pyfastaq import tasks
 from pymummer import alignment
 from bio_assembly_refinement import utils
 from pyfastaq import utils as fastaqutils
+from pyfastaq import sequences
 
 class ContigCleanup:
 	def __init__(self, 
@@ -115,13 +116,18 @@ class ContigCleanup:
 			ids_file = utils.write_ids_to_file(discard, "contig.ids.discard")  
 			tasks.filter(self.fasta_file, self.output_file, ids_file=ids_file, invert=True)	
 				
-			# tasks filter can produce empty file. check and delete
-			if (os.path.exists(self.output_file)) and os.stat(self.output_file).st_size == 0:
-				utils.delete(self.output_file)
-				
+# tasks filter can produce empty file. check and delete
+# 			if (os.path.exists(self.output_file)) and os.stat(self.output_file).st_size == 0:
+# 				utils.delete(self.output_file)
+								
 			if not self.debug:
 				utils.delete(ids_file)
 				utils.delete(self._build_nucmer_filename())
+		else:
+			output_fw = fastaqutils.open_file_write(self.output_file)
+			for contig_id in self.contigs:
+				print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)
+			fastaqutils.close(output_fw)
 		
 		self._write_summary(small_contigs, contained_contigs)	
 		os.chdir(original_dir)

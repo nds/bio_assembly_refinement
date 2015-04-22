@@ -13,8 +13,12 @@ class TestContigBreakFinder(unittest.TestCase):
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"), 
 							      gene_file = os.path.join(data_dir, "all_dnaA.fa"), 
 							      ), 
-							     'CBREAKING_Providencia_rustigianni.fa' ],
-# 			[contig_break_finder.ContigBreakFinder(input_file, cutoff_contig_length=6, skip=skip_ids_file), 'CLEANUP_output_1_b.fa' ],
+							     'BREAKING_Providencia_rustigianni.fa' ],
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"),
+                                                              gene_file = os.path.join(data_dir, "all_dnaA.fa"),
+							      skip = os.path.join(data_dir, "BREAKING_skip_ids.txt"),		
+                                                              ),
+                                                             'BREAKING_Providencia_rustigianni_2.fa' ],
 			]
 				
 		for t in tests:

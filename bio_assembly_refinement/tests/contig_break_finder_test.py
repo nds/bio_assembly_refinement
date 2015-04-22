@@ -15,12 +15,11 @@ class TestContigBreakFinder(unittest.TestCase):
 														     gene_file = test_dnaA_file,
 														     skip = ids_file,
 														     choose_random_gene= False,
-														     rename = False,
-														     														     								       
+														     rename = False,														     														     								       
 												            )	
 		break_finder.run()
-# 		os.remove(break_finder.output_file)
-# 		os.remove(break_finder.summary_file)
+		os.remove(break_finder.output_file)
+		os.remove(break_finder.summary_file)
 		#Complete tests
 		
 		

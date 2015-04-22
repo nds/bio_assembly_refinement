@@ -172,7 +172,7 @@ class ContigBreakFinder:
 						if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
 							new_name = 'plasmid_' + str(plasmid_count)
 							plasmid_count += 1
-						if self.choose_random_gene and self.random_gene_starts[contig_id]:			
+						if self.choose_random_gene and random_gene_starts[contig_id]:			
 							break_point = random_gene_starts[contig_id]
 							gene_name = 'prodigal'
 				

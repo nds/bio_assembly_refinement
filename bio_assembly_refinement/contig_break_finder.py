@@ -195,4 +195,3 @@ class ContigBreakFinder:
 				print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)
 				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
 			fastaqutils.close(output_fw)
-			

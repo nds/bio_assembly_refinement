@@ -82,7 +82,7 @@ class ContigBreakFinder:
 		'''Run prodigal and find gene starts''' 
 		gene_starts = {}
 		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q")	# run on whole fasta as prodgal works better with larger sequences
-		fh = fastaqutils.open_file_read('tmp_genes.gff')
+		fh = fastaqutils.open_file_read(self._build_prodigal_filename())
 		for line in fh:
 			if not line.startswith("#"):
 				columns = line.split('\t')

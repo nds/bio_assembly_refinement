@@ -172,7 +172,7 @@ class ContigBreakFinder:
 						if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
 							new_name = 'plasmid_' + str(plasmid_count)
 							plasmid_count += 1
-						if self.choose_random_gene and self.random_gene_starts[contig_id]:			
+						if self.choose_random_gene and random_gene_starts[contig_id]:			
 							break_point = random_gene_starts[contig_id]
 							gene_name = 'prodigal'
 				
@@ -189,6 +189,10 @@ class ContigBreakFinder:
 				utils.delete(self._build_promer_filename())
 				utils.delete(self._build_prodigal_filename())
 		else:
+			# Just write all the contigs out
+			output_fw = fastaqutils.open_file_write(self.output_file)
 			for contig_id in self.contigs:
+				print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)
 				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
+			fastaqutils.close(output_fw)
 			

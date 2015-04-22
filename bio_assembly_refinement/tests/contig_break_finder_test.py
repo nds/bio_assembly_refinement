@@ -43,9 +43,10 @@ class TestContigBreakFinder(unittest.TestCase):
 		breaker.run()
 		
 		expected_summary_file = os.path.join(data_dir, "BREAKING_summary_file.txt")            
-		self.assertTrue(not os.path.isfile(breaker.output_file))
+		self.assertTrue(os.path.isfile(breaker.output_file))
 		self.assertTrue(os.path.isfile(breaker.summary_file))
 # 		self.assertTrue(filecmp.cmp(breaker.summary_file, expected_summary_file , shallow=False)) 
-		os.remove(breaker.summary_file)           
+# 		os.remove(breaker.summary_file)     
+# 		os.remove(breaker.output_file)       
 		
 		

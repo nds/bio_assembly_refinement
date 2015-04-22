@@ -8,8 +8,9 @@ data_dir = os.path.join(modules_dir, 'tests', 'data')
 
 class TestContigBreakFinder(unittest.TestCase):
 	def test_finding_dnaA(self):
-		test_dnaA_file = os.path.join(data_dir, "test_dnaA.fa")
-		test_fasta_file = os.path.join(data_dir, "CLEANUP_input_1.fa")
+		
+		test_dnaA_file = os.path.join(data_dir, "all_dnaA.fa")
+		test_fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa")
 		ids_file = os.path.join(data_dir, "ids_to_avoid.txt")
 		break_finder = contig_break_finder.ContigBreakFinder(fasta_file = test_fasta_file,
 														     gene_file = test_dnaA_file,

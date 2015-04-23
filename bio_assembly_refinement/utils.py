@@ -43,30 +43,16 @@ def write_text_to_file(text, filename):
 	return filename
 	
 	
-def run_prodigal_and_get_start_of_a_gene(sequence):
-	# Write plasmid to a file
-	# Run prodigal
-	# Return a gene start location (first, or middle?)
-	# Delete plasmid file and the gff file output by prodigal
-	
-	output_fw = fastaqutils.open_file_write("tmp_seq.fa")
-	print(sequences.Fasta("contig", sequence), file=output_fw)
-	output_fw.close()
-	fastaqutils.syscall("prodigal -i tmp_seq.fa -o tmp_genes.gff -f gff -c")
-	
-	boundary_start = round(0.3 * len(sequence)) # Look for a gene that starts after 30% of the sequence length (i.e. be sure to avoid region of overlap)
-	gene_start = 0
-	
-	fh = fastaqutils.open_file_read('tmp_genes.gff')
-	for line in fh:
-		if not line.startswith("#"):
-			columns = line.split('\t')
-			start_location = int(columns[3])
-			if start_location > boundary_start:
-				gene_start = start_location - 1 #Interbase
-				break;    		
-	delete('tmp_genes.gff')
-	delete('tmp_seq.fa')
-	return gene_start		
+def parse_file_or_set(s):
+	items = set()	
+	if s:
+		if type(s) == set:
+			items = s
+		else:
+			fh = fastaqutils.open_file_read(s) #Will just fail is file not found. Handle properly
+			for line in fh:
+				items.add(line.rstrip())
+			fastaqutils.close(fh)
+	return items	
 	
 

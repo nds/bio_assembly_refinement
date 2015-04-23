@@ -7,11 +7,14 @@ class ProdigalHit:
 				 strand,
 				 point,
 				 ):
+		self.start = start
+		self.end = end
+		self.strand = strand
 		# Calculate distance to start
-		if start <= p <= end:
+		if start <= point <= end:
 			self.distance = 0
 		else:
-			self.distance = min(abs(start - p), abs(end - p))
+			self.distance = min(abs(start - point), abs(end - point))
 		
 				 
 				  

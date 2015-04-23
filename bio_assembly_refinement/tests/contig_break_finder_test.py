@@ -25,7 +25,7 @@ class TestContigBreakFinder(unittest.TestCase):
                                                                 gene_file = os.path.join(data_dir, "all_dnaA.fa"),
 							      								skip = os.path.join(data_dir, "BREAKING_skip_ids_3.txt"),
 							      								rename = False,	
-							      								choose_random_gene=True, 	
+							      								choose_random_gene=False, 	
                                                               ),
             'BREAKING_Providencia_rustigianni_3.fa' ],
  
@@ -36,8 +36,8 @@ class TestContigBreakFinder(unittest.TestCase):
 			self.assertTrue(os.path.isfile(t[0].output_file))
 			self.assertTrue(os.path.isfile(t[0].summary_file))
 #			self.assertTrue(filecmp.cmp(t[0].output_file, os.path.join(data_dir, t[1]) , shallow=False)) 
- 			os.remove(t[0].output_file)
- 			os.remove(t[0].summary_file)	
+			os.remove(t[0].output_file)
+			os.remove(t[0].summary_file)	
 
 	def test_skipping_all(self):
 			

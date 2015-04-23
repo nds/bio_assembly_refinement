@@ -30,9 +30,8 @@ break_finder.summary_file will be the summary file
 import os
 import shutil
 from bio_assembly_refinement import utils
-from pyfastaq import sequences
+from pyfastaq import sequences, tasks, intervals
 from pyfastaq import utils as fastaqutils
-from pyfastaq import tasks
 from pymummer import alignment
 
 
@@ -63,6 +62,7 @@ class ContigBreakFinder:
 		self.debug = debug
 		self.contigs = {}
 		tasks.file_to_dict(self.fasta_file, self.contigs) #Read contig ids and sequences into dict
+		self.random_gene_starts = {}
 
 		self.ids_to_skip = set()		
 		if skip:
@@ -79,17 +79,34 @@ class ContigBreakFinder:
 		'''Run prodigal and find gene starts''' 
 		gene_starts = {}
 		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q")	# run on whole fasta as prodgal works better with larger sequences
+		prodigal_genes = {}
 		fh = fastaqutils.open_file_read(self._build_prodigal_filename())
 		for line in fh:
 			if not line.startswith("#"):
 				columns = line.split('\t')
 				start_location = int(columns[3])
+				end_location = int(columns[4])
 				contig_id = columns[0]
-				boundary_start = round(0.4 * len(self.contigs[contig_id]))
-				boundary_end = round(0.6 * len(self.contigs[contig_id]))
-				if start_location > boundary_start and start_location < boundary_end:
-					gene_starts[contig_id] = start_location - 1 #Interbase				
+				strand = columns[6]	
+				i = intervals.Interval(start_location-1, end_location-1) # convert to interbase
+				distance = i.distance_to_point(abs((len(self.contigs[contig_id])/2)))
+				l = [i, strand, distance]
+				prodigal_genes[contig_id].append[l]
 		fastaqutils.close(fh)
+		# look for best distance
+		for id in self.contig.key():
+ 			all_gene_hits = gene_starts[id]
+ 			best_gene = None
+ 			min_distance = abs(len(self.contigs[contig_id])/2)
+ 			for g in all_genes:
+ 				if g[2] <= min_distance:
+ 					best_gene = g[0],g[1]
+ 					min_distance = g[2]
+ 			if best_gene:
+ 				gene_starts[id] = best_gene
+ 			else:
+ 				gene_starts[id] = None # Could not find a gene
+			
 		return gene_starts	
 		
 		
@@ -137,10 +154,11 @@ class ContigBreakFinder:
 			# run promer and prodigal only if needed
 			dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, self._build_promer_filename(), min_percent_id=self.hit_percent_id, run_promer=True)
 			if self.choose_random_gene:
-				random_gene_starts = self._run_prodigal_and_get_gene_starts()
+				self.random_gene_starts = self._run_prodigal_and_get_gene_starts()
 		
 		chromosome_count = 1
 		plasmid_count = 1
+		
 		output_fw = fastaqutils.open_file_write(self.output_file)
 		for contig_id in self.contigs:
 			contig_sequence = self.contigs[contig_id]
@@ -170,11 +188,10 @@ class ContigBreakFinder:
 						break;
 				
 				if not dnaA_found:
-					if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
-						new_name = 'plasmid_' + str(plasmid_count)
-						plasmid_count += 1
+					new_name = 'plasmid_' + str(plasmid_count) #if len(self.contigs[contig_id]) < 200000 # Only rename if it's roughly plasmid size
+					plasmid_count += 1
 					if self.choose_random_gene and random_gene_starts[contig_id]:			
-						break_point = random_gene_starts[contig_id]
+						break_point = random_gene_starts[contig_id][0].start
 						gene_name = 'prodigal'
 			
 				if break_point > 0:
@@ -189,7 +206,7 @@ class ContigBreakFinder:
 				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
 			
 		fastaqutils.close(output_fw)
-	
+		# clean up
 		if not self.debug:
 			utils.delete(self._build_promer_filename())
 			utils.delete(self._build_prodigal_filename())

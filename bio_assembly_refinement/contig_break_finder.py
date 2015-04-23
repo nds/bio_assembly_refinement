@@ -132,66 +132,65 @@ class ContigBreakFinder:
 
 	def run(self):
 		'''Look for break point in contigs and rename if needed'''
-		if len(self.contigs) > len(self.ids_to_skip):
-			# run nucmer and prodigal
+		contigs_in_file = set(self.contigs.keys())		
+		if contigs_in_file != self.ids_to_skip:
+			# run promer and prodigal only if needed
 			dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, self._build_promer_filename(), min_percent_id=self.hit_percent_id, run_promer=True)
 			if self.choose_random_gene:
 				random_gene_starts = self._run_prodigal_and_get_gene_starts()
-
-			chromosome_count = 1
-			plasmid_count = 1
-			output_fw = fastaqutils.open_file_write(self.output_file)
-			for contig_id in self.contigs:
-				contig_sequence = self.contigs[contig_id]
-				if contig_id not in self.ids_to_skip:		
-					dnaA_found = False
-					gene_name = '-'
-					gene_on_reverse_strand = None
-					new_name = contig_id #Stick with old name if no new name comes along
-					break_point = 0
-				
-					for algn in dnaA_alignments:			
-						if algn.ref_name == contig_id and \
-						   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
-						   algn.percent_identity >= self.hit_percent_id and \
-						   algn.qry_start == 0:	     
-							dnaA_found = True
-							gene_name = algn.qry_name
-							if algn.on_same_strand():
-								break_point = algn.ref_start						
-							else:
-								# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-								contig_sequence.revcomp()
-								break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
-								gene_on_reverse_strand = True
-							new_name = 'chromosome_' + str(chromosome_count)
-							chromosome_count += 1		
-							break;
-					
-					if not dnaA_found:
-						if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
-							new_name = 'plasmid_' + str(plasmid_count)
-							plasmid_count += 1
-						if self.choose_random_gene and random_gene_starts[contig_id]:			
-							break_point = random_gene_starts[contig_id]
-							gene_name = 'prodigal'
-				
-					if break_point > 0:
-						contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
-				
-					contig_name = new_name if self.rename else contig_id
-					print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
-					self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name, False)
-				
-			output_fw.close()
 		
-			if not self.debug:
-				utils.delete(self._build_promer_filename())
-				utils.delete(self._build_prodigal_filename())
-		else:
-			# Just write all the contigs out
-			output_fw = fastaqutils.open_file_write(self.output_file)
-			for contig_id in self.contigs:
+		chromosome_count = 1
+		plasmid_count = 1
+		output_fw = fastaqutils.open_file_write(self.output_file)
+		for contig_id in self.contigs:
+			contig_sequence = self.contigs[contig_id]
+			if contig_id not in self.ids_to_skip:		
+				dnaA_found = False
+				gene_name = '-'
+				gene_on_reverse_strand = None
+				new_name = contig_id #Stick with old name if no new name comes along
+				break_point = 0
+			
+				for algn in dnaA_alignments:			
+					if algn.ref_name == contig_id and \
+					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
+					   algn.percent_identity >= self.hit_percent_id and \
+					   algn.qry_start == 0:	     
+						dnaA_found = True
+						gene_name = algn.qry_name
+						if algn.on_same_strand():
+							break_point = algn.ref_start						
+						else:
+							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
+							contig_sequence.revcomp()
+							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
+							gene_on_reverse_strand = True
+						new_name = 'chromosome_' + str(chromosome_count)
+						chromosome_count += 1		
+						break;
+				
+				if not dnaA_found:
+					if len(self.contigs[contig_id]) < 200000: # Only rename if it's roughly plasmid size
+						new_name = 'plasmid_' + str(plasmid_count)
+						plasmid_count += 1
+					if self.choose_random_gene and random_gene_starts[contig_id]:			
+						break_point = random_gene_starts[contig_id]
+						gene_name = 'prodigal'
+			
+				if break_point > 0:
+					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
+			
+				contig_name = new_name if self.rename else contig_id
+				print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
+				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name, False)
+			
+			else: # Just write contig as it is
 				print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)
 				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
-			fastaqutils.close(output_fw)
+			
+		fastaqutils.close(output_fw)
+	
+		if not self.debug:
+			utils.delete(self._build_promer_filename())
+			utils.delete(self._build_prodigal_filename())
+	

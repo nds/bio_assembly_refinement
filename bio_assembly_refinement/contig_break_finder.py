@@ -29,7 +29,7 @@ break_finder.summary_file will be the summary file
 
 import os
 import shutil
-from bio_assembly_refinement import utils
+from bio_assembly_refinement import utils, prodigal_hit
 from pyfastaq import sequences, tasks, intervals
 from pyfastaq import utils as fastaqutils
 from pymummer import alignment
@@ -88,25 +88,23 @@ class ContigBreakFinder:
 				end_location = int(columns[4])
 				contig_id = columns[0]
 				strand = columns[6]	
-				i = intervals.Interval(start_location-1, end_location-1) # convert to interbase
-				distance = i.distance_to_point(abs((len(self.contigs[contig_id])/2)))
-				l = [i, strand, distance]
-				prodigal_genes[contig_id].append[l]
+				middle = abs((len(self.contigs[contig_id])/2))
+				p = prodigal_hit.ProdigalHit(start_location, end_location, strand, middle)				
+				prodigal_genes.setdefault(contig_id, []).append(p)
 		fastaqutils.close(fh)
 		# look for best distance
 		for id in self.contig.key():
- 			all_gene_hits = gene_starts[id]
+ 			all_prodigal_hits = prodigal_genes[id]
  			best_gene = None
  			min_distance = abs(len(self.contigs[contig_id])/2)
- 			for g in all_genes:
- 				if g[2] <= min_distance:
- 					best_gene = g[0],g[1]
- 					min_distance = g[2]
+ 			for p in all_prodigal_hits:
+ 				if p.distance <= min_distance:
+ 					best_gene = p
+ 					min_distance = p.distance
  			if best_gene:
  				gene_starts[id] = best_gene
  			else:
- 				gene_starts[id] = None # Could not find a gene
-			
+ 				gene_starts[id] = None # Could not find a gene			
 		return gene_starts	
 		
 		
@@ -164,11 +162,12 @@ class ContigBreakFinder:
 			contig_sequence = self.contigs[contig_id]
 			if contig_id not in self.ids_to_skip:		
 				dnaA_found = False
-				gene_name = '-'
+				gene_name = None
 				gene_on_reverse_strand = None
-				new_name = contig_id #Stick with old name if no new name comes along
+				new_name = contig_id 
 				break_point = 0
 			
+				# Look for dnaA
 				for algn in dnaA_alignments:			
 					if algn.ref_name == contig_id and \
 					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
@@ -179,29 +178,33 @@ class ContigBreakFinder:
 						if algn.on_same_strand():
 							break_point = algn.ref_start						
 						else:
-							# Reverse complement sequence, circularise using new start of dnaA in the right orientation
-							contig_sequence.revcomp()
 							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
 							gene_on_reverse_strand = True
 						new_name = 'chromosome_' + str(chromosome_count)
 						chromosome_count += 1		
-						break;
 				
-				if not dnaA_found:
-					new_name = 'plasmid_' + str(plasmid_count) #if len(self.contigs[contig_id]) < 200000 # Only rename if it's roughly plasmid size
-					plasmid_count += 1
-					if self.choose_random_gene and random_gene_starts[contig_id]:			
-						break_point = random_gene_starts[contig_id][0].start
+				# Or look for a gene in prodigal results
+				if not dnaA_found and self.choose_random_gene:
+					if self.random_gene_starts[contig_id]:
 						gene_name = 'prodigal'
-			
+						if random_gene_starts[contig_id].strand == '+':			
+							break_point = random_gene_starts[contig_id].start
+						else:		
+							break_point = (len(self.contigs[contig_id]) - random_gene_starts[contig_id].start) - 1 #interbase
+							gene_on_reverse_strand = True
+				
+				# circularise the contig				
 				if break_point > 0:
+					if gene_on_reverse_strand:
+						contig_sequence.revcomp()
 					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
-			
+
+				# write the contig out			
 				contig_name = new_name if self.rename else contig_id
 				print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
-				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, contig_name, False)
+				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, new_name, False)
 			
-			else: # Just write contig as it is
+			else: # If skipped, just write contig as it is
 				print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)
 				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
 			

@@ -92,7 +92,7 @@ class ContigBreakFinder:
 				p = prodigal_hit.ProdigalHit(start_location, end_location, strand, middle)				
 				prodigal_genes.setdefault(contig_id, []).append(p)
 		fastaqutils.close(fh)
-		# look for best distance
+		# look for best hit for all contigs
 		for id in self.contig.key():
  			all_prodigal_hits = prodigal_genes[id]
  			best_gene = None

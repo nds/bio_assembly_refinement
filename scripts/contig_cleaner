@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+from bio_assembly_refinement import contig_cleanup
+
+parser = argparse.ArgumentParser(
+				description = 'Remove small contigs and contigs completely contained in others',
+    			usage = '%(prog)s [options]',
+)
+
+parser.add_argument('fasta_file', help='Input fasta file', metavar='input fasta file')
+parser.add_argument('--cutoff_length', type=int, help='Minimum acceptable contig length [%(default)s]', default=2000, metavar='INT')
+parser.add_argument('--hit_percent_id', type=int, help='Minimum acceptable hit percent id for contained contigs [%(default)s]', default=95, metavar='INT')
+parser.add_argument('--skip', type=str, help='File of contig ids to skip', metavar='FILE')
+parser.add_argument('--debug', help="Keep all temp files", action='store_true', default=False)
+
+options = parser.parse_args()
+
+cleaner = contig_cleanup.ContigCleanup(fasta_file = options.fasta_file, 
+				 					   cutoff_contig_length=options.cutoff_contig_length,
+				 					   percent_match = options.hit_percent_id,
+				 					   skip = options.skip,
+				 					   debug = options.debug
+				 					   )
+cleaner.run()

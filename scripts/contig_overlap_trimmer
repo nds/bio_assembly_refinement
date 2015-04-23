@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+
+import sys
+import argparse
+from bio_assembly_refinement import contig_overlap_trimmer
+
+parser = argparse.ArgumentParser(
+				description = 'Report and trim overlaps between the ends of contigs',
+    			usage = '%(prog)s [options]',
+)
+
+parser.add_argument('fasta_file', help='Input fasta file', metavar='input fasta file')
+parser.add_argument('--no_trim', help="Do not trim overlaps", action='store_false', default=True)
+parser.add_argument('--trim_rev_overlaps', help="Trim reversed overlaps", action='store_true', default=False)
+parser.add_argument('--overlap_offset', type=int, help='Minimum offset from ends to look for overlaps [%(default)s]', default=1000, metavar='INT')
+parser.add_argument('--overlap_boundary_max', type=int, help='Maximum boundary of overlap expressed as percentage of contig length [%(default)s]', default=50, metavar='INT')
+parser.add_argument('--overlap_min_length', type=int, help='Minimum length of a overlap [%(default)s]', default=1000, metavar='INT')
+parser.add_argument('--overlap_max_length', type=int, help='Maximum length of a overlap [%(default)s]', default=3000, metavar='INT')
+parser.add_argument('--overlap_percent_id', type=int, help='Minimum acceptable hit percent id for overlaps [%(default)s]', default=85, metavar='INT')
+parser.add_argument('--min_trim_length', type=int, help='Minimum acceptable trimmed length expressed as percentage of total contig length [%(default)s]', default=0.89, metavar='FLOAT')
+parser.add_argument('--skip', type=str, help='File of contig ids to skip', metavar='FILE')
+parser.add_argument('--debug', help="Keep all temp files", action='store_true', default=False)
+
+options = parser.parse_args()
+
+trimmer = contig_overlap_trimmer.ContigOverlapTrimmer(fasta_file = options.fasta_file,
+ 													  trim = options.no_trim,
+				                                      trim_reversed_overlaps = options.trim_rev_overlaps,
+				 								      overlap_offset=options.overlap_offset, 
+				 									  overlap_boundary_max=options.overlap_boundary_max,				 									   
+				 								      overlap_min_length=options.overlap_min_length,
+				 								      overlap_max_length=options.overlap_max_length,
+				 								      overlap_percent_identity=options.overlap_percent_id,
+				 								      min_trim_length=options.min_trim_length,
+				 								      skip = options.skip,
+				 								      debug = options.debug
+				 								      )
+trimmer.run()

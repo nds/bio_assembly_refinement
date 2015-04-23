@@ -18,11 +18,11 @@ class TestContigOverlapTrimmer(unittest.TestCase):
 				 	 		   '\t'.join(['2', '4', '54', '56', '3', '3', '100.00', '60', '60', '1', '1', 'contig4', 'contig4']),
 				 	 		   '\t'.join(['1', '3', '58', '60', '3', '3', '100.00', '60', '60', '1', '1', 'contig4', 'contig4']),		 	 		   
 				 	 		   '\t'.join(['1', '4', '57', '60', '4', '4', '100.00', '60', '60', '1', '1', 'contig5', 'contig5']),				 	 		   
-				 	 		   '\t'.join(['1', '2', '59', '60', '2', '2', '100.00', '60', '60', '1', '1', 'contig6', 'contig6']),				 	 		   
-				 	 		   '\t'.join(['1', '12', '49', '60', '12', '12', '100.00', '60', '60', '1', '1', 'contig7', 'contig7']),				 	 		   
-				 	 		   '\t'.join(['13', '15', '57', '54', '4', '4', '100.00', '60', '60', '1', '-1', 'contig8', 'contig8']),
+				 	 		   '\t'.join(['1', '2', '59', '60', '2', '2', '100.00', '60', '60', '1', '1', 'contig6', 'contig6']), #Overlap too short				 	 		   
+				 	 		   '\t'.join(['1', '12', '49', '60', '12', '12', '100.00', '60', '60', '1', '1', 'contig7', 'contig7']), # Trimmed length would be too short				 	 		   
+				 	 		   '\t'.join(['1', '3', '60', '58', '3', '3', '100.00', '60', '60', '-1', '-1', 'contig8', 'contig8']), #overlap reversed
 				 	 		   # No overlap for contig 9
-				 	 		   '\t'.join(['4', '7', '36', '38', '4', '4', '100.00', '60', '60', '1', '-1', 'contig10', 'contig10']),
+				 	 		   '\t'.join(['4', '7', '36', '38', '4', '4', '100.00', '60', '60', '1', '-1', 'contig10', 'contig10']), #beyond offset
 							  ]							  
 		test_overlap_alignments = [alignment.Alignment(coord) for coord in test_overlap_coords] 
 		overlap_trimmer = contig_overlap_trimmer.ContigOverlapTrimmer(fasta_file = test_fasta_file,

@@ -10,22 +10,22 @@ class TestContigBreakFinder(unittest.TestCase):
 	def test_finding_dnaA(self):
 		
 		tests = [
-#			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"), 
-#							      											 gene_file = os.path.join(data_dir, "all_dnaA.fa"), 
-#							      											 choose_random_gene=False, 	
-#							      											), 
-#			'BREAKING_Providencia_rustigianni.fa' ],
-# 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"),
-#                                                                gene_file = os.path.join(data_dir, "all_dnaA.fa"),
-#							      								skip = os.path.join(data_dir, "BREAKING_skip_ids.txt"),	
-#							      								choose_random_gene=False, 	
-#                                                              ),
-#            'BREAKING_Providencia_rustigianni_2.fa' ],            
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"), 
+							      											 gene_file = os.path.join(data_dir, "all_dnaA.fa"), 
+							      											 choose_random_gene=False, 	
+							      											), 
+			'BREAKING_Providencia_rustigianni.fa' ],
+ 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "Providencia_rustigianii.fa"),
+                                                                gene_file = os.path.join(data_dir, "all_dnaA.fa"),
+							      								skip = os.path.join(data_dir, "BREAKING_skip_ids.txt"),	
+							      								choose_random_gene=False, 	
+                                                              ),
+            'BREAKING_Providencia_rustigianni_2.fa' ],            
              [contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKING_input_3.fa"),
                                                                 gene_file = os.path.join(data_dir, "all_dnaA.fa"),
-#							      								skip = os.path.join(data_dir, "BREAKING_skip_ids_3.txt"),
+							      								skip = os.path.join(data_dir, "BREAKING_skip_ids_3.txt"),
 							      								rename = False,	
-							      								choose_random_gene=True, 	
+							      								choose_random_gene=False, 	
                                                               ),
             'BREAKING_Providencia_rustigianni_3.fa' ],
  
@@ -36,8 +36,8 @@ class TestContigBreakFinder(unittest.TestCase):
 			self.assertTrue(os.path.isfile(t[0].output_file))
 			self.assertTrue(os.path.isfile(t[0].summary_file))
 #			self.assertTrue(filecmp.cmp(t[0].output_file, os.path.join(data_dir, t[1]) , shallow=False)) 
-#			os.remove(t[0].output_file)
-#			os.remove(t[0].summary_file)	
+			os.remove(t[0].output_file)
+			os.remove(t[0].summary_file)	
 
 	def test_skipping_all(self):
 			
@@ -53,7 +53,7 @@ class TestContigBreakFinder(unittest.TestCase):
 		self.assertTrue(os.path.isfile(breaker.output_file))
 		self.assertTrue(os.path.isfile(breaker.summary_file))
 # 		self.assertTrue(filecmp.cmp(breaker.summary_file, expected_summary_file , shallow=False)) 
-#		os.remove(breaker.summary_file)     
-#		os.remove(breaker.output_file)       
+		os.remove(breaker.summary_file)     
+		os.remove(breaker.output_file)       
 		
 		

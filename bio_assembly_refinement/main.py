@@ -62,8 +62,7 @@ class Main:
 				no_bsub = False,	
 				# general arguments
 				working_directory=None,
-				pacbio_exec = "pacbio_smrtanalysis", 
-				nucmer_exec = "nucmer", 
+				pacbio_exec = "pacbio_smrtanalysis",  
 				reassembly_dir = "improved_assembly",
 				summary_file = "assembly_refinement_summary.txt",
 				debug = False
@@ -90,7 +89,6 @@ class Main:
 		# general arguments
 		self.working_directory = working_directory if working_directory else os.getcwd()	 
 		self.pacbio_exec = pacbio_exec
-		self.nucmer_exec = nucmer_exec 
 		self.reassembly_dir = reassembly_dir
 		self.summary_file = summary_file
 		self.debug = debug   		
@@ -110,9 +108,9 @@ class Main:
 												debug = self.debug)
 		ccleaner.run()
 		
+		# Step 2: Trim
 		contig_trimmer = contig_overlap_trimmer.ContigOverlapTrimmer(fasta_file = ccleaner.output_file, 
 													   working_directory = self.working_directory,
-												       alignments = ccleaner.alignments,
 												       trim = self.trim,
 				 									   trim_reversed_overlaps = self.trim_reversed_overlaps,
 												       overlap_offset = self.overlap_offset,
@@ -124,7 +122,8 @@ class Main:
 													   debug = self.debug
 												      )												      
 		contig_trimmer.run()      
-				
+		
+		# Step 3: Break contigs at same point		
 		if os.path.exists(contig_trimmer.output_file):
 			contig_breaker = contig_break_finder.ContigBreakFinder(fasta_file = contig_trimmer.output_file, 
 																   gene_file = self.dnaA_sequence,
@@ -135,7 +134,7 @@ class Main:
 																  )
 			contig_breaker.run()	
 			
-
+		# Step 4: Run quiver
 		if os.path.exists(contig_breaker.output_file):
 			reassembler = reassembly.Reassembly(input_file=contig_breaker.output_file,
 												read_data=self.bax_files,

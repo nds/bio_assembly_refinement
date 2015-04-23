@@ -93,18 +93,19 @@ class ContigBreakFinder:
 				prodigal_genes.setdefault(contig_id, []).append(p)
 		fastaqutils.close(fh)
 		# look for best distance
-		for id in self.contig.key():
- 			all_prodigal_hits = prodigal_genes[id]
- 			best_gene = None
- 			min_distance = abs(len(self.contigs[contig_id])/2)
- 			for p in all_prodigal_hits:
- 				if p.distance <= min_distance:
- 					best_gene = p
- 					min_distance = p.distance
- 			if best_gene:
- 				gene_starts[id] = best_gene
- 			else:
- 				gene_starts[id] = None # Could not find a gene			
+		for id in self.contigs.keys():
+			best_gene = None
+			if id in prodigal_genes.keys():
+	 			all_prodigal_hits = prodigal_genes[id]
+ 				min_distance = abs(len(self.contigs[contig_id])/2)
+ 				for p in all_prodigal_hits:
+ 					if p.distance <= min_distance:
+ 						best_gene = p
+ 						min_distance = p.distance
+			if best_gene:
+				gene_starts[id] = best_gene
+			else:
+				gene_starts[id] = None # Could not find a gene			
 		return gene_starts	
 		
 		
@@ -140,7 +141,7 @@ class ContigBreakFinder:
 		new_name_to_print = '-'
 		if new_name and self.rename:
 			new_name_to_print = new_name
-		skipped_print = 'skipped' if skipped else ''			
+		skipped_print = 'skipped' if skipped else '-'			
 		text = self.summary_prefix + " " + '\t'.join(map(str, [contig_id, breakpoint_to_print, gene_name_to_print, gene_reversed_to_print, new_name_to_print, skipped_print])) + '\n'
 		utils.write_text_to_file(text, self.summary_file)		
 	
@@ -185,12 +186,12 @@ class ContigBreakFinder:
 				
 				# Or look for a gene in prodigal results
 				if not dnaA_found and self.choose_random_gene:
-					if self.random_gene_starts[contig_id]:
+					if contig_id in self.random_gene_starts.keys() and self.random_gene_starts[contig_id]:
 						gene_name = 'prodigal'
-						if random_gene_starts[contig_id].strand == '+':			
-							break_point = random_gene_starts[contig_id].start
+						if self.random_gene_starts[contig_id].strand == '+':			
+							break_point = self.random_gene_starts[contig_id].start
 						else:		
-							break_point = (len(self.contigs[contig_id]) - random_gene_starts[contig_id].start) - 1 #interbase
+							break_point = (len(self.contigs[contig_id]) - self.random_gene_starts[contig_id].start) - 1 #interbase
 							gene_on_reverse_strand = True
 				
 				# circularise the contig				

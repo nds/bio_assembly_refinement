@@ -85,7 +85,7 @@ class ContigBreakFinder:
 		p_option = "-p meta"
 		if LooseVersion(version) > LooseVersion('2.6'):
 			p_option = "-p anon"
-		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q" + p_option)	# run on whole fasta as prodgal works better with larger sequences
+		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q " + p_option)	# run on whole fasta as prodgal works better with larger sequences
 		prodigal_genes = {}
 		fh = fastaqutils.open_file_read(self._build_prodigal_filename())
 		for line in fh:

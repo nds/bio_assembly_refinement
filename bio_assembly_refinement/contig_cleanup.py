@@ -115,10 +115,6 @@ class ContigCleanup:
 			discard = small_contigs.union(contained_contigs)
 			ids_file = utils.write_ids_to_file(discard, "contig.ids.discard")  
 			tasks.filter(self.fasta_file, self.output_file, ids_file=ids_file, invert=True)	
-				
-# tasks filter can produce empty file. check and delete
-# 			if (os.path.exists(self.output_file)) and os.stat(self.output_file).st_size == 0:
-# 				utils.delete(self.output_file)
 								
 			if not self.debug:
 				utils.delete(ids_file)

@@ -6,6 +6,8 @@ import os
 import sys
 from pymummer import coords_file, alignment, nucmer
 from pyfastaq import utils as fastaqutils, sequences
+import re
+import subprocess
 
 class Error (Exception): pass
 
@@ -44,6 +46,7 @@ def write_text_to_file(text, filename):
 	
 	
 def parse_file_or_set(s):
+	'''Parse a file or set and return set of items in it '''
 	items = set()	
 	if s:
 		if type(s) == set:
@@ -53,6 +56,17 @@ def parse_file_or_set(s):
 			for line in fh:
 				items.add(line.rstrip())
 			fastaqutils.close(fh)
-	return items	
+	return items
+	
+def get_prodigal_version():
+	'''Get prodigal version''' #There must be a better way to do this!
+	cmd = "prodigal -v"
+	cmd_output = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
+	for l in cmd_output:
+		l = l.decode()
+		m = re.findall(r'[V](\d\.\d)', l)
+	if m:
+		return m[0]
+
 	
 

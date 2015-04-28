@@ -36,7 +36,7 @@ class Reassembly:
 				 pacbio_exec="pacbio_smrtanalysis",		
 				 no_bsub=False,		 
 				 working_directory=None,
-				 summary_file="smrtanalysis_summary.txt",
+				 summary_file="quiver_command_summary.txt",
 				 debug=False
 				 ):
 				 

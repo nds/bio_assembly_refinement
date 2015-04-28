@@ -130,6 +130,7 @@ class Main:
 																   hit_percent_id = self.dnaA_hit_percent_identity,
 																   match_length_percent = self.dnaA_hit_length_minimum,
 																   working_directory = self.working_directory,
+																   rename = False,	
 																   debug = self.debug
 																  )
 			contig_breaker.run()	

@@ -80,12 +80,13 @@ class ContigBreakFinder:
 	def _run_prodigal_and_get_gene_starts(self):
 		'''Run prodigal and find gene starts''' 
 		gene_starts = {}
-		version = utils.get_prodigal_version()
-		print(version)
-		p_option = "-p meta"
-		if LooseVersion(version) > LooseVersion('2.6'):
-			p_option = "-p anon"
-		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q " + p_option)	# run on whole fasta as prodgal works better with larger sequences
+#		version = utils.get_prodigal_version()
+#		print(version)
+#		p_option = "-p meta"
+#		if LooseVersion(version) > LooseVersion('2.6'):
+#			p_option = "-p anon"
+#		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q " + p_option)	# run on whole fasta as prodgal works better with larger sequences
+		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q")
 		prodigal_genes = {}
 		fh = fastaqutils.open_file_read(self._build_prodigal_filename())
 		for line in fh:

@@ -72,9 +72,9 @@ class Reassembly:
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
 		no_bsub_option = "--no_bsub" if self.no_bsub else ""
-# 		pacbio_smrtanalysis --memory 130 --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
+# 		pacbio_smrtanalysis --memory 6 --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
 		command = " ".join([self.pacbio_exec,
-							'--memory 130',
+							'--memory 6',
 							no_bsub_option,
 							'--reference', self.input_file,
 							'RS_Resequencing',

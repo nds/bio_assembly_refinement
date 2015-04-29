@@ -140,10 +140,6 @@ class Main:
 			reassembler = reassembly.Reassembly(input_file=contig_breaker.output_file,
 												read_data=self.bax_files,
 												pacbio_exec=self.pacbio_exec,
-												no_bsub = self.no_bsub,
-												working_directory = self.working_directory,
-												output_directory = self.reassembly_dir,
-												debug = self.debug
 												)
 											
 			reassembler.run()

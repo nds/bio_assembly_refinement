@@ -12,7 +12,7 @@ class TestReassembly(unittest.TestCase):
 		'''Test reassembly'''
 		
 		test_file = os.path.join(data_dir, "CLEANUP_input_1.fa")
-		summary_file = os.path.join(os.getcwd(), "smrtanalysis_summary.txt")
+		summary_file = os.path.join(os.getcwd(), "quiver_command_summary.txt")
 		
 		reassembler = reassembly.Reassembly(input_file=test_file,
 											read_data=data_dir,

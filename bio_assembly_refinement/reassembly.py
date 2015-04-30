@@ -84,8 +84,8 @@ class Reassembly:
 							])	
 							
 		if(os.path.getsize(self.input_file)):						
-		#	fastaqutils.syscall(command)
-			subprocess.call(command, shell=True)
+			fastaqutils.syscall(command)
+#			subprocess.call(command, shell=True)
 			self._produce_summary(command)
 		else:
 			self._produce_summary("File empty: " + self.input_file)

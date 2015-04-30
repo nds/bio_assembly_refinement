@@ -22,7 +22,7 @@ def delete(filename):
 			
 def run_nucmer(ref, query, output, min_percent_id=95, run_promer=False):
 	'''Run nucmer and return a list of alignment objects'''
-	runner = nucmer.Runner(ref, query, output, min_id=min_percent_id, coords_header=False, maxmatch=True, simplify=False, promer=True) # nucmer default break length is 200
+	runner = nucmer.Runner(ref, query, output, min_id=min_percent_id, coords_header=False, maxmatch=True, simplify=False, promer=run_promer) # nucmer default break length is 200
 	runner.run()
 	file_reader = coords_file.reader(output)
 	alignments = [coord for coord in file_reader]

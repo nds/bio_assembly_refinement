@@ -98,7 +98,7 @@ class ContigCleanup:
 		small_contigs = set()
 		contained_contigs = set()
 		if len(self.contigs) > len(self.ids_to_skip):
-			alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_nucmer_filename(), min_percent_id=self.percent_match)
+			alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_nucmer_filename(), min_percent_id=self.percent_match, run_promer=False)
 			for id in self.contigs.keys():
 				if not id in self.ids_to_skip:
 					if len(self.contigs[id]) < self.cutoff_contig_length:

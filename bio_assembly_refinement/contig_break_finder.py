@@ -12,6 +12,7 @@ choose_random_gene : if genes in file cannot be found, run prodigal and find ran
 rename : rename contigs (default True)
 working_directory : path to working directory (default to current working directory)
 summary_file : summary file
+summary prefix : the prefix for each line in summary file
 debug : do not delete temp files if set to true (default false)
 
 Sample usage:
@@ -34,7 +35,7 @@ from pyfastaq import sequences, tasks, intervals
 from pyfastaq import utils as fastaqutils
 from pymummer import alignment
 import subprocess
-from distutils.version import LooseVersion
+
 
 
 class ContigBreakFinder:
@@ -75,46 +76,49 @@ class ContigBreakFinder:
 				for line in fh:
 					self.ids_to_skip.add(line.rstrip())
 				fastaqutils.close(fh)
+				
+	
+	def _get_length_of_fasta_file(self):
+		''' Sum up lengths of all contigs'''
+		d = {k: len(v) for k, v in self.contigs.items()}
+		return sum(d.values())
 	
 		
 	def _run_prodigal_and_get_gene_starts(self):
-		'''Run prodigal and find gene starts''' 
+		'''Run prodigal and find best gene starts around middle of contigs''' 
 		gene_starts = {}
-#		version = utils.get_prodigal_version()
-#		print(version)
-#		p_option = "-p meta"
-#		if LooseVersion(version) > LooseVersion('2.6'):
-#			p_option = "-p anon"
-#		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q " + p_option)	# run on whole fasta as prodgal works better with larger sequences
-		fastaqutils.syscall("prodigal -i " + self.fasta_file + " -o " + self._build_prodigal_filename() +  " -f gff -c -q")
+		# run prodigal
+		prodigal_output = utils.run_prodigal(self.fasta_file, self._build_prodigal_filename(), self._get_length_of_fasta_file())
 		prodigal_genes = {}
-		fh = fastaqutils.open_file_read(self._build_prodigal_filename())
-		for line in fh:
-			if not line.startswith("#"):
-				columns = line.split('\t')
-				start_location = int(columns[3])
-				end_location = int(columns[4])
-				contig_id = columns[0]
-				strand = columns[6]	
-				middle = abs((len(self.contigs[contig_id])/2))
-				p = prodigal_hit.ProdigalHit(start_location, end_location, strand, middle)				
-				prodigal_genes.setdefault(contig_id, []).append(p)
-		fastaqutils.close(fh)
-		# look for best distance
-		for id in self.contigs.keys():
-			best_gene = None
-			if id in prodigal_genes.keys():
-	 			all_prodigal_hits = prodigal_genes[id]
- 				min_distance = abs(len(self.contigs[contig_id])/2)
- 				for p in all_prodigal_hits:
- 					if p.distance <= min_distance:
- 						best_gene = p
- 						min_distance = p.distance
-			if best_gene:
-				gene_starts[id] = best_gene
-			else:
-				gene_starts[id] = None # Could not find a gene			
+		if(prodigal_output):
+			fh = fastaqutils.open_file_read(self._build_prodigal_filename())
+			for line in fh:
+				if not line.startswith("#"):
+					columns = line.split('\t')
+					start_location = int(columns[3])
+					end_location = int(columns[4])
+					contig_id = columns[0]
+					strand = columns[6]	
+					middle = abs((len(self.contigs[contig_id])/2))
+					p = prodigal_hit.ProdigalHit(start_location, end_location, strand, middle)				
+					prodigal_genes.setdefault(contig_id, []).append(p)
+			fastaqutils.close(fh)
+			# look for best distance
+			for id in self.contigs.keys():
+				best_gene = None
+				if id in prodigal_genes.keys():
+					all_prodigal_hits = prodigal_genes[id]
+					min_distance = abs(len(self.contigs[contig_id])/2)
+					for p in all_prodigal_hits:
+						if p.distance <= min_distance:
+							best_gene = p
+							min_distance = p.distance
+				if best_gene:
+					gene_starts[id] = best_gene
+				else:
+					gene_starts[id] = None # Could not find a gene			
 		return gene_starts	
+
 		
 		
 	def _build_final_filename(self):
@@ -139,7 +143,7 @@ class ContigBreakFinder:
 			header = self.summary_prefix + " " + '\t'.join(['id', 'break_point', 'gene_name', 'gene_reversed', 'new_name', 'skipped']) +'\n'
 			utils.write_text_to_file(header, self.summary_file)
 			
-		breakpoint_to_print = break_point if break_point > 0 else '-'
+		breakpoint_to_print = break_point if break_point else '-'
 		gene_name_to_print = gene_name if gene_name else '-'
 		gene_reversed_to_print = '-'
 		if gene_reversed:
@@ -169,13 +173,14 @@ class ContigBreakFinder:
 		output_fw = fastaqutils.open_file_write(self.output_file)
 		for contig_id in self.contigs:
 			contig_sequence = self.contigs[contig_id]
-			if contig_id not in self.ids_to_skip:		
-				dnaA_found = False
-				gene_name = None
-				gene_on_reverse_strand = None
-				new_name = contig_id 
-				break_point = 0
+			dnaA_found = False
+			gene_name = None
+			gene_on_reverse_strand = False
+			new_name = contig_id 
+			break_point = None
+			skipped = False
 			
+			if contig_id not in self.ids_to_skip:				
 				# Look for dnaA
 				for algn in dnaA_alignments:			
 					if algn.ref_name == contig_id and \
@@ -194,32 +199,32 @@ class ContigBreakFinder:
 				
 				# Or look for a gene in prodigal results
 				if not dnaA_found and self.choose_random_gene:
-					if contig_id in self.random_gene_starts.keys() and self.random_gene_starts[contig_id]:
+					if contig_id in self.random_gene_starts and self.random_gene_starts[contig_id]:
 						gene_name = 'prodigal'
 						if self.random_gene_starts[contig_id].strand == '+':			
 							break_point = self.random_gene_starts[contig_id].start
 						else:		
 							break_point = (len(self.contigs[contig_id]) - self.random_gene_starts[contig_id].start) - 1 #interbase
 							gene_on_reverse_strand = True
+						new_name = 'plasmid_' + str(plasmid_count)
 				
 				# circularise the contig				
-				if break_point > 0:
+				if break_point:
 					if gene_on_reverse_strand:
 						contig_sequence.revcomp()
 					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
-
-				# write the contig out			
-				contig_name = new_name if self.rename else contig_id
-				print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
-				self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, new_name, False)
 			
-			else: # If skipped, just write contig as it is
-				print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)
-				self._write_summary(contig_id , 0, None, None, None, True) # Log the contigs anyway
+			else: # Skipped, just write contig as it is
+				skipped = True
+	
+			# write the contig out			
+			contig_name = new_name if self.rename else contig_id
+			print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
+			self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, new_name, skipped)
 			
 		fastaqutils.close(output_fw)
+
 		# clean up
 		if not self.debug:
 			utils.delete(self._build_promer_filename())
 			utils.delete(self._build_prodigal_filename())
-	

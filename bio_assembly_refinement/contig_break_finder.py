@@ -213,6 +213,7 @@ class ContigBreakFinder:
 					if gene_on_reverse_strand:
 						contig_sequence.revcomp()
 					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
+					self.contigs[contig_id].seq = contig_sequence
 			
 			else: # Skipped, just write contig as it is
 				skipped = True

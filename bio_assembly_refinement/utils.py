@@ -8,6 +8,7 @@ from pymummer import coords_file, alignment, nucmer
 from pyfastaq import utils as fastaqutils, sequences
 import re
 import subprocess
+from distutils.version import LooseVersion
 
 class Error (Exception): pass
 
@@ -58,6 +59,7 @@ def parse_file_or_set(s):
 			fastaqutils.close(fh)
 	return items
 	
+	
 def get_prodigal_version():
 	'''Get prodigal version''' #There must be a better way to do this!
 	cmd = "prodigal -v"
@@ -67,6 +69,28 @@ def get_prodigal_version():
 		m = re.findall(r'[V](\d\.\d)', l)
 	if m:
 		return m[0]
+		
+		
+def run_prodigal(input_fasta, prodigal_output_file, length):
+	'''Run prodigal - check version, check errors'''
+	try:
+		p_option = ""
+		if (length < 20000):
+			# prodigal needs -p meta option for sequences less than 20000
+			# annoyingly newer version of prodigal has different -p option!
+			version = utils.get_prodigal_version()
+			if LooseVersion(version) > LooseVersion('2.6'):
+				p_option = "-p anon"
+			else:
+				p_option = "-p meta"
+		cmd = "prodigal -i " + input_fasta + " -o " + prodigal_output_file + " -f gff -c -q " + p_option
+		output = subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+		return prodigal_output_file
+	except  subprocess.CalledProcessError as error:
+		print('Error running prodigal, so will not use gene predictions \n')
+		print(error.output.decode())
+		return None
+        
 
 	
 

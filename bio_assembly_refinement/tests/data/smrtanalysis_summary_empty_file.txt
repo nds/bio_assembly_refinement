@@ -1,2 +1,0 @@
-~~smrtanalysis command~~ 
-File empty: /Users/nds/Git_projects/bio_assembly_refinement/bio_assembly_refinement/tests/data/empty_file.fa

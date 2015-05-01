@@ -1,3 +1,0 @@
-unitig_0
-unitig_1
-unitig_2

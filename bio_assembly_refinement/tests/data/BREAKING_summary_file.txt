@@ -1,4 +1,0 @@
-[contig break finder] id	break_point	gene_name	gene_reversed	new_name
-[contig break finder] unitig_0 skipped	-	-	-	-
-[contig break finder] unitig_1 skipped	-	-	-	-
-[contig break finder] unitig_2 skipped	-	-	-	-

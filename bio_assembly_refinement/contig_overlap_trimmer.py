@@ -16,6 +16,7 @@ overlap_max_length : maximum length of overlap (default 3KB)
 overlap_percent_identity : percent identity of match between ends (default 85)
 min_trim_length : minimum trimmed length of contig over total contig length (default 0.8)
 summary_file :  summary file (default contig_overlap_summary.txt)
+summary_prefix : prefix for lines in summary file
 debug : do not delete temp files if set to true (default false)
 			  
 Sample usage:
@@ -115,7 +116,7 @@ class ContigOverlapTrimmer:
 			trim_status = "trimmed length would be too short, not trimming"
 			return trim_status
 		else:
-			self.contigs[contig_id] = trimmed_sequence
+			self.contigs[contig_id].seq = trimmed_sequence
 			trim_status = "trimmed length " + str(len(trimmed_sequence))
 		return trim_status
 		
@@ -168,7 +169,7 @@ class ContigOverlapTrimmer:
 				if best_overlap and self.trim:
 					trim_status = self._trim(contig_id, best_overlap)
 			self._write_summary(contig_id, best_overlap, trim_status)
-			print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)	
+			print(sequences.Fasta(contig_id, self.contigs[contig_id].seq), file=output_fw)	
 		fastaqutils.close(output_fw)			
 # 		tasks.sort_by_size(self._build_intermediate_filename(), self.output_file) # Sort contigs in final file according to size
 		

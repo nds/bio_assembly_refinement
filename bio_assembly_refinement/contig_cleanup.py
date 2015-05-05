@@ -9,6 +9,7 @@ cutoff_contig_length : contigs smaller than this will be disregarded (default 20
 percent_match : percent identity of nucmer hit when deciding if contig is contained in another (default 95)
 skip : contig ids to skip i.e. keep no matter what (file or list)
 summary_file : summary file
+summary_prefix : prefix for lines in summary file
 debug : do not delete temp files if set to true (default false)
 
 Sample usage:

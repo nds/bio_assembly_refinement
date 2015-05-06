@@ -1,7 +1,7 @@
 bio\_assembly\_refinement
 =======================
 
-Modules to filter, trim, circularise and re-assemble contigs, mostly useful for (but not limited to) draft bacterial assemblies using long read data (e.g. pacbio)
+Pipeline to filter, trim, circularise and re-assemble contigs, mostly useful for (but not limited to) draft bacterial assemblies using long read data (e.g. PacBio)
 
 Description
 -----------
@@ -24,8 +24,8 @@ __1.	MUMmer__
 
 Instructions to install MUMmer can be found [here](http://mummer.sourceforge.net/manual/#installation)
     
-__2.	pacbio\_smrtanalysis RS\_sequencing__
-	
+__2.	pacbio\_smrtanalysis__
+
 [Installation instructions to be completed]
 
 __3.	pyfastaq__ 
@@ -74,6 +74,12 @@ Attributes of Main.py:
 **overlap\_max\_length**: maximum length of overlap (default 3000 bases)
 
 **overlap\_percent\_identity**: minimum percent identity in nucmer hits to use when determining if ends overlap (default 85)
+
+**min\_trim\_length**: minimum trimmed length of contig over total contig length (default 0.8)
+
+**trim**: trim overlaps (default true) 
+
+**trim\_reversed\_overlaps**: trims overlaps even if reversed (default false)
 
 **dnaA\_hit\_percent\_identity**: minimum percent identity to consider when looking at hits to dnaA/refA/refB (default 80)
 

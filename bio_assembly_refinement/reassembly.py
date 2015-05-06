@@ -24,6 +24,7 @@ reassembler.run()
 import os
 import shutil
 import time
+import subprocess
 from pyfastaq import tasks, sequences
 from pyfastaq import utils as fastaqutils
 from bio_assembly_refinement import utils
@@ -36,7 +37,7 @@ class Reassembly:
 				 pacbio_exec="pacbio_smrtanalysis",		
 				 no_bsub=False,		 
 				 working_directory=None,
-				 summary_file="smrtanalysis_summary.txt",
+				 summary_file="quiver_command_summary.txt",
 				 debug=False
 				 ):
 				 
@@ -72,18 +73,19 @@ class Reassembly:
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)
 		no_bsub_option = "--no_bsub" if self.no_bsub else ""
-# 		pacbio_smrtanalysis --memory 130 --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
+# 		pacbio_smrtanalysis --memory 6 --reference /path/to/reference.fa RS_Resequencing Outputdir *.bax.h5
 		command = " ".join([self.pacbio_exec,
-							'--memory 130',
+							"--memory 6",
 							no_bsub_option,
-							'--reference', self.input_file,
-							'RS_Resequencing',
+							"--reference", self.input_file,
+							"RS_Resequencing",
 							self.output_directory,
 							self.read_data + "/*.bax.h5"
 							])	
 							
 		if(os.path.getsize(self.input_file)):						
 			fastaqutils.syscall(command)
+#			subprocess.call(command, shell=True)
 			self._produce_summary(command)
 		else:
 			self._produce_summary("File empty: " + self.input_file)

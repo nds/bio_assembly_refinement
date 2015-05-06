@@ -13,6 +13,9 @@ overlap_boundary_max : max boundary of overlap expressed as % of length of refer
 overlap_min_length : minimum length of overlap (default 1KB)
 overlap_max_length : minimum length of overlap (default 3KB)
 overlap_percent_identity : percent identity to use when determining if ends overlap
+min_trim_length : minimum trimmed length of contig over total contig length (default 0.8)
+trim : trim overlaps (default true)
+trim_reversed_overlaps: trims overlaps even if reversed (default false)
 dnaA_hit_percent_identity : percent identity to use when looking at hits to dnaA
 dnaA_hit_length_minimum : minimum length of hit to dnaA
 no_bsub : If set, will run quiver as a child process and not bsub it (useful for pipeline)
@@ -58,12 +61,12 @@ class Main:
 				trim_reversed_overlaps = False,
 				# contig breaker arguments
 				dnaA_hit_percent_identity=80,
-				dnaA_hit_length_minimum=65,		
+				dnaA_hit_length_minimum=65,	
+				# quiver arguments	
 				no_bsub = False,	
+				pacbio_exec = "pacbio_smrtanalysis", 
 				# general arguments
 				working_directory=None,
-				pacbio_exec = "pacbio_smrtanalysis", 
-				nucmer_exec = "nucmer", 
 				reassembly_dir = "improved_assembly",
 				summary_file = "assembly_refinement_summary.txt",
 				debug = False
@@ -86,11 +89,11 @@ class Main:
 		# contig break arguments
 		self.dnaA_hit_percent_identity = dnaA_hit_percent_identity
 		self.dnaA_hit_length_minimum = dnaA_hit_length_minimum	
+		# quiver arguments
 		self.no_bsub = no_bsub
+		self.pacbio_exec = pacbio_exec
 		# general arguments
 		self.working_directory = working_directory if working_directory else os.getcwd()	 
-		self.pacbio_exec = pacbio_exec
-		self.nucmer_exec = nucmer_exec 
 		self.reassembly_dir = reassembly_dir
 		self.summary_file = summary_file
 		self.debug = debug   		
@@ -110,9 +113,9 @@ class Main:
 												debug = self.debug)
 		ccleaner.run()
 		
+		# Step 2: Trim
 		contig_trimmer = contig_overlap_trimmer.ContigOverlapTrimmer(fasta_file = ccleaner.output_file, 
 													   working_directory = self.working_directory,
-												       alignments = ccleaner.alignments,
 												       trim = self.trim,
 				 									   trim_reversed_overlaps = self.trim_reversed_overlaps,
 												       overlap_offset = self.overlap_offset,
@@ -124,29 +127,31 @@ class Main:
 													   debug = self.debug
 												      )												      
 		contig_trimmer.run()      
-				
+		
+		# Step 3: Break contigs at same point		
 		if os.path.exists(contig_trimmer.output_file):
 			contig_breaker = contig_break_finder.ContigBreakFinder(fasta_file = contig_trimmer.output_file, 
 																   gene_file = self.dnaA_sequence,
 																   hit_percent_id = self.dnaA_hit_percent_identity,
 																   match_length_percent = self.dnaA_hit_length_minimum,
 																   working_directory = self.working_directory,
+																   rename = False,	
 																   debug = self.debug
 																  )
 			contig_breaker.run()	
 			
-
+		# Step 4: Run quiver
 		if os.path.exists(contig_breaker.output_file):
 			reassembler = reassembly.Reassembly(input_file=contig_breaker.output_file,
 												read_data=self.bax_files,
 												pacbio_exec=self.pacbio_exec,
 												no_bsub = self.no_bsub,
 												working_directory = self.working_directory,
-												output_directory = self.reassembly_dir,
-												debug = self.debug
+												debug = self.debug,
 												)
 											
 			reassembler.run()
+			
 		
 		if not self.debug:
 			utils.delete(ccleaner.output_file)

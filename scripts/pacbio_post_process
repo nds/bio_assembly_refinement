@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(
 )
 
 parser.add_argument('fasta_file', help='Input fasta file', metavar='Input fasta file')
-parser.add_argument('dnaA', help='Fasta file with dnaA sequence', metavar='dnaA/refA/refB sequence')
+parser.add_argument('dnaA', help='Fasta file with dnaA sequence', metavar='dnaA/other sequence')
 parser.add_argument('bax_files', help='Directory with bax.h5 files', metavar='Directory with bax.h5 files')
 parser.add_argument('--min_contig_length', type=int, help='Minimum length of contigs [%(default)s]', default=2000, metavar='INT')
 parser.add_argument('--contained_percent_match', type=int, help='Percent match identity when determining if a contig is contained in another [%(default)s]', default=90, metavar='INT')
@@ -19,6 +19,8 @@ parser.add_argument('--overlap_boundary_max', type=int, help='Maximum boundary o
 parser.add_argument('--overlap_min_length', type=int, help='Minimum length of overlap [%(default)s]', default=1000, metavar='INT')
 parser.add_argument('--overlap_max_length', type=int, help='Maximum length of overlap [%(default)s]', default=3000, metavar='INT')
 parser.add_argument('--min_trim_length', type=float, help='Minimum trimmed length of contig over original length [%(default)s]', default=0.89, metavar='FLOAT')
+parser.add_argument('--no_trim', help="Do not trim overlaps", action='store_false', default=True)
+parser.add_argument('--trim_rev_overlaps', help="Trim reversed overlaps", action='store_true', default=False)
 parser.add_argument('--overlap_percent_identity', type=int, help='Percent match identity when determining if ends of contig overlap [%(default)s]', default=85, metavar='INT')
 parser.add_argument('--dnaA_hit_percent_identity', type=int, help='Percent match identity when looking at hits to dnaA [%(default)s]', default=80, metavar='INT')
 parser.add_argument('--dnaA_hit_length_minimum', type=int, help='Minimum acceptable hit length to dnaA expressed as percentage of dnaA length [%(default)s]', default=95, metavar='INT')
@@ -39,6 +41,8 @@ processor = main.Main(  fasta_file = options.fasta_file,
 						overlap_max_length = options.overlap_max_length,
 						overlap_percent_identity = options.overlap_percent_identity,
 						min_trim_length = options.min_trim_length,
+						trim = options.no_trim,
+						trim_reversed_overlaps = options.trim_rev_overlaps,
 						dnaA_hit_percent_identity = options.dnaA_hit_percent_identity,
 						dnaA_hit_length_minimum = options.dnaA_hit_length_minimum,
 						no_bsub = options.no_bsub,

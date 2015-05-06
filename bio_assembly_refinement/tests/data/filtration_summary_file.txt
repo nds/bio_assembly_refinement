@@ -1,6 +1,0 @@
-~~Contig filtration~~
-Small contigs removed:
-TEST_CONTIG_0
-Contained contigs removed:
-TEST_CONTIG_11
-TEST_CONTIG_12

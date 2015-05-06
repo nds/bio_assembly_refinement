@@ -16,6 +16,7 @@ overlap_max_length : maximum length of overlap (default 3KB)
 overlap_percent_identity : percent identity of match between ends (default 85)
 min_trim_length : minimum trimmed length of contig over total contig length (default 0.8)
 summary_file :  summary file (default contig_overlap_summary.txt)
+summary_prefix : prefix for lines in summary file
 debug : do not delete temp files if set to true (default false)
 			  
 Sample usage:
@@ -29,7 +30,7 @@ import re
 from pyfastaq import tasks, sequences
 from pyfastaq import utils as fastaqutils
 from pymummer import alignment
-from bio_assembly_refinement import utils, contig_history
+from bio_assembly_refinement import utils
 
 class ContigOverlapTrimmer:
 	def __init__(self, 
@@ -45,7 +46,9 @@ class ContigOverlapTrimmer:
 				 overlap_max_length=3000,
 				 overlap_percent_identity=85,
 				 min_trim_length=0.89,
-				 summary_file = "contig_trimming_summary.txt",			  
+				 skip = None,
+				 summary_file = "contig_trimming_summary.txt",	
+				 summary_prefix = '[contig trimmer]',		  
 				 debug=False):
 
 		''' Constructor '''
@@ -61,18 +64,16 @@ class ContigOverlapTrimmer:
 		self.overlap_max_length = overlap_max_length
 		self.overlap_percent_identity = overlap_percent_identity
 		self.min_trim_length = min_trim_length
+		self.ids_to_skip = utils.parse_file_or_set(skip)
 		self.summary_file = summary_file
+		self.summary_prefix = summary_prefix
 		self.output_file = self._build_final_filename()
 		self.debug = debug
 		
-		# Extract contigs and generate nucmer hits if not provided
+		# Extract contigs
 		if not self.contigs:
 			self.contigs = {}
 			tasks.file_to_dict(self.fasta_file, self.contigs) 
-		
-		# Run nucmer
-		if not self.alignments:
-			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename(), min_percent_id=self.overlap_percent_identity)
 		
 		
 	def _find_best_overlap(self, contig_id):
@@ -102,7 +103,7 @@ class ContigOverlapTrimmer:
 		trim_start = best_overlap.ref_end+1
 		trim_end = best_overlap.qry_end+1
 		trim_status = ''
-		if not best_overlap.on_same_strand:
+		if not best_overlap.on_same_strand():
 			if not self.trim_reversed_overlaps:
 				trim_status = "overlap reversed, not trimming"
 				return trim_status
@@ -115,7 +116,7 @@ class ContigOverlapTrimmer:
 			trim_status = "trimmed length would be too short, not trimming"
 			return trim_status
 		else:
-			self.contigs[contig_id] = trimmed_sequence
+			self.contigs[contig_id].seq = trimmed_sequence
 			trim_status = "trimmed length " + str(len(trimmed_sequence))
 		return trim_status
 		
@@ -123,15 +124,17 @@ class ContigOverlapTrimmer:
 	def _write_summary(self, contig_id, best_overlap, trim_status):
 		'''Write summary'''
 		if (not os.path.exists(self.summary_file)) or os.stat(self.summary_file).st_size == 0:
-			header = '\t'.join(['id', 'overlap length', 'overlap location', 'trim status']) +'\n'
+			header = '\t'.join([self.summary_prefix, 'id', 'overlap length', 'overlap location', 'trim status']) +'\n'
 			utils.write_text_to_file(header, self.summary_file)
 		overlap_length = '-'
 		overlap_location = '-'
 		if best_overlap:
 			overlap_length = str(best_overlap.hit_length_ref)
 			overlap_location = str(best_overlap.ref_start) + ',' + str(best_overlap.ref_end) + '-' + \
-							   str(best_overlap.qry_start) + ',' + str(best_overlap.qry_start)
-		line = "\t".join([contig_id, overlap_length, overlap_location, trim_status]) + "\n"
+							   str(best_overlap.qry_start) + ',' + str(best_overlap.qry_end)
+		else:
+			trim_status = "no suitable overlap found"
+		line = "\t".join([self.summary_prefix, contig_id, overlap_length, overlap_location, trim_status]) + "\n"
 		utils.write_text_to_file(line, self.summary_file)
 						   
 						   
@@ -152,15 +155,21 @@ class ContigOverlapTrimmer:
 	def run(self):	
 		original_dir = os.getcwd()
 		os.chdir(self.working_directory)	
+		
+		contigs_in_file = set(self.contigs.keys())		
+		if contigs_in_file != self.ids_to_skip and not self.alignments:
+			self.alignments = utils.run_nucmer(self.fasta_file, self.fasta_file, self._build_alignments_filename(), min_percent_id=self.overlap_percent_identity)
+					
 		output_fw = fastaqutils.open_file_write(self.output_file)
-		for contig_id in self.contigs.keys():
+		for contig_id in sorted(self.contigs.keys()):
 			#Look for overlaps, trim if applicable
-			best_overlap = self._find_best_overlap(contig_id)
-			trim_status = ''			
-			if best_overlap and self.trim:
-				trim_status = self._trim(contig_id, best_overlap)
+			if contig_id not in self.ids_to_skip:
+				best_overlap = self._find_best_overlap(contig_id)
+				trim_status = None			
+				if best_overlap and self.trim:
+					trim_status = self._trim(contig_id, best_overlap)
 			self._write_summary(contig_id, best_overlap, trim_status)
-			print(sequences.Fasta(contig_id, self.contigs[contig_id]), file=output_fw)	
+			print(sequences.Fasta(contig_id, self.contigs[contig_id].seq), file=output_fw)	
 		fastaqutils.close(output_fw)			
 # 		tasks.sort_by_size(self._build_intermediate_filename(), self.output_file) # Sort contigs in final file according to size
 		

@@ -1,4 +1,4 @@
-bio\_assembly\_refinement
+bio_assembly_refinement
 =======================
 
 Pipeline to filter, trim, circularise and re-assemble contigs, mostly useful for (but not limited to) draft bacterial assemblies using long read data (e.g. PacBio)
@@ -18,23 +18,23 @@ There are also scripts that can be used to call these functions is on the comman
 Installation
 ------------
 
-###Pre-requisites###
+**Pre-requisites**
 
-__1.	MUMmer__
+*1.	MUMmer*
 
 Instructions to install MUMmer can be found [here](http://mummer.sourceforge.net/manual/#installation)
     
-__2.	pacbio\_smrtanalysis__
+*2.	pacbio_smrtanalysis*
 
 [Installation instructions to be completed]
 
-__3.	pyfastaq__ 
+*3.	pyfastaq*
 		
 Install: 
 	
 	pip3 install pyfastaq
 		
-__4.	prodigal__ 
+*4.	prodigal* 
 		
 PRODIGAL gene finding software. [Installation instructions](https://github.com/hyattpd/prodigal/wiki/Installation) for PRODIGAL 
 
@@ -55,45 +55,45 @@ Sample usage of main module:
 Attributes of Main.py:
 ----------------------
 
-**fasta\_file**: input fasta file
+**fasta_file**: input fasta file
 
-**dnaA\_sequence**: fasta file with dnaA/refA/refB sequences
+**dnaA_sequence**: fasta file with dnaA/refA/refB sequences
  
-**bax\_files**: directory containing bax.h5 files
+**bax_files**: directory containing bax.h5 files
 
-**cutoff\_contig\_length**: minimum contig length (default 10000)
+**cutoff_contig_length**: minimum contig length (default 10000)
 
-**contained\_percent\_match**: minimum percent identity in nucmer hits to determine if contig is contained in another (default 95)
+**contained_percent_match**: minimum percent identity in nucmer hits to determine if contig is contained in another (default 95)
 
-**overlap\_offset**: offset from the ends of a contig where an overlap region can begin (default 1000)
+**overlap_offset**: offset from the ends of a contig where an overlap region can begin (default 1000)
 
-**overlap\_boundary\_max**: maximum boundary of the overlap between ends (expressed as % of contig length) (default 50)
+**overlap_boundary_max**: maximum boundary of the overlap between ends (expressed as % of contig length) (default 50)
 
-**overlap\_min\_length**: minimum length of overlap (default 1000 bases)
+**overlap_min_length**: minimum length of overlap (default 1000 bases)
 
-**overlap\_max\_length**: maximum length of overlap (default 3000 bases)
+**overlap_max_length**: maximum length of overlap (default 3000 bases)
 
-**overlap\_percent\_identity**: minimum percent identity in nucmer hits to use when determining if ends overlap (default 85)
+**overlap_percent_identity**: minimum percent identity in nucmer hits to use when determining if ends overlap (default 85)
 
-**min\_trim\_length**: minimum trimmed length of contig over total contig length (default 0.8)
+**min_trim_length**: minimum trimmed length of contig over total contig length (default 0.8)
 
 **trim**: trim overlaps (default true) 
 
-**trim\_reversed\_overlaps**: trims overlaps even if reversed (default false)
+**trim_reversed_overlaps**: trims overlaps even if reversed (default false)
 
-**dnaA\_hit\_percent\_identity**: minimum percent identity to consider when looking at hits to dnaA/refA/refB (default 80)
+**dnaA_hit_percent_identity**: minimum percent identity to consider when looking at hits to dnaA/refA/refB (default 80)
 
-**dnaA\_hit\_length\_minimum**: minimum length of hit to dnaA/refA/refB expressed as % of length of dnaA/refA/refB (default 95)
+**dnaA_hit_length_minimum**: minimum length of hit to dnaA/refA/refB expressed as % of length of dnaA/refA/refB (default 95)
 
-**working\_directory**: working directory (default current working directory) 
+**working_directory**: working directory (default current working directory) 
 
-**pacbio\_exec**: pacbio resequencing exec (default pacbio_smrtanalysis) 
+**pacbio_exec**: pacbio resequencing exec (default pacbio_smrtanalysis) 
 
-**nucmer\_exec**: nucmer exec (default nucmer) 
+**nucmer_exec**: nucmer exec (default nucmer) 
 
-**reassembly\_dir**: directory sent to quiver (default reassembly)
+**reassembly_dir**: directory sent to quiver (default reassembly)
 
-**summary\_file**: summary file (default pacbio\_postprocess\_summary.txt) 
+**summary_file**: summary file (default pacbio\_postprocess\_summary.txt) 
 
 **debug**: do not delete temp files if set to true (default false)
 

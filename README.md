@@ -1,4 +1,4 @@
-bio\_assembly\_refinement
+bio_assembly_refinement
 =======================
 
 Pipeline to filter, trim, circularise and re-assemble contigs, mostly useful for (but not limited to) draft bacterial assemblies using long read data (e.g. PacBio)

@@ -79,7 +79,7 @@ def run_prodigal(input_fasta, prodigal_output_file, length):
 			# prodigal needs -p meta option for sequences less than 20000
 			# annoyingly newer version of prodigal has different -p option!
 			version = get_prodigal_version()
-			if LooseVersion(version) > LooseVersion('2.6'):
+			if LooseVersion(version) >= LooseVersion('3.0'):
 				p_option = "-p anon"
 			else:
 				p_option = "-p meta"

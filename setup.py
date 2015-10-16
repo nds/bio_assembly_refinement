@@ -7,7 +7,7 @@ def read(fname):
 
 setup(
     name='bio_assembly_refinement',
-    version='0.3.3',
+    version='0.4.0',
     description='Assembly refinement tools, mostly useful for (but not limited to) pacbio bacterial assembly',
     long_description=read('README.md'),
     packages = find_packages(),

@@ -140,7 +140,7 @@ class ContigBreakFinder:
 	def _write_summary(self, contig_id, break_point, gene_name, gene_reversed, new_name, skipped):
 		'''Write summary'''
 		if (not os.path.exists(self.summary_file)) or os.stat(self.summary_file).st_size == 0:
-			header = self.summary_prefix + " " + '\t'.join(['id', 'break_point', 'gene_name', 'gene_reversed', 'new_name', 'skipped']) +'\n'
+			header = self.summary_prefix + "\t" + '\t'.join(['id', 'break_point', 'gene_name', 'gene_reversed', 'new_name', 'skipped']) +'\n'
 			utils.write_text_to_file(header, self.summary_file)
 			
 		breakpoint_to_print = break_point if break_point else '-'
@@ -154,7 +154,7 @@ class ContigBreakFinder:
 		if new_name and self.rename:
 			new_name_to_print = new_name
 		skipped_print = 'skipped' if skipped else '-'			
-		text = self.summary_prefix + " " + '\t'.join(map(str, [contig_id, breakpoint_to_print, gene_name_to_print, gene_reversed_to_print, new_name_to_print, skipped_print])) + '\n'
+		text = self.summary_prefix + "\t" + '\t'.join(map(str, [contig_id, breakpoint_to_print, gene_name_to_print, gene_reversed_to_print, new_name_to_print, skipped_print])) + '\n'
 		utils.write_text_to_file(text, self.summary_file)		
 	
 

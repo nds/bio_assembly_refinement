@@ -177,7 +177,6 @@ class ContigBreakFinder:
 	def _is_partial_match_at_start(self, hit, contig_id):
 		''' Is hit a partial match to dnaA at the start of contig '''
 		if hit.on_same_strand():
-			#print("Strand not reversed")
 			if hit.ref_name == contig_id and \
 		   	   hit.qry_end == hit.qry_length - 1 and \
 			   hit.ref_start == 0 and \

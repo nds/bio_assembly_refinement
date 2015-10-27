@@ -24,5 +24,6 @@ class TestMain(unittest.TestCase):
 		os.remove(intermediate_file)
 		
 		# check for other summary files and clean them up
+		os.remove(os.path.join(os.getcwd(), 'contig_cleanup_summary.txt'))
 		
 

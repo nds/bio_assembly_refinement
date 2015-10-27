@@ -97,12 +97,12 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											), 
 													'BREAKFINDER_output_dnaa_at_start.fa' ], 	
 			# no dnaa, but use prodigal	
-# 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_no_dnaa.fa"), 
-# 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-# 							      											 choose_random_gene=True, 
-# 							      											 rename = False,	
-# 							      											), 
-# 													'BREAKFINDER_input_no_dnaa.fa' ], #do not change the contig										
+ 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_no_dnaa_use_prodigal.fa"), 
+ 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_real_dnaa.fa"), 
+ 							      											 choose_random_gene=True, 
+ 							      											 rename = False,	
+ 							      											), 
+ 													'BREAKFINDER_output_no_dnaa_use_prodigal.fa' ], 										
 			# skip one contig
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 

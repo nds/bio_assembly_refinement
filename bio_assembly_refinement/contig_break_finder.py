@@ -222,7 +222,7 @@ class ContigBreakFinder:
 				if  hit_at_start.qry_name == hit_at_end.qry_name and \
 					(hit_at_start.hit_length_qry + hit_at_end.hit_length_qry) == hit_at_start.qry_length and \
 					hit_at_start.qry_length == hit_at_end.qry_length and \
-					(bool(hit_at_start.on_same_strand) is bool(hit_at_end.on_same_strand)) and \
+					(hit_at_start.on_same_strand() is hit_at_end.on_same_strand()) and \
  					hit_at_start.percent_identity >= best_start_hit.percent_identity and \
  					hit_at_end.percent_identity >= best_end_hit.percent_identity:					
 					best_start_hit = hit_at_start

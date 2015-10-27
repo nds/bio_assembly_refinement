@@ -1,15 +1,16 @@
 ''' 
-Find the point at which to break a circular contig (at origin of replication or random gene)
+Find the best point at which to break a circular contig (at origin of replication or random gene)
+Uses promer and prodigal
 
 Attributes:
 -----------
 fasta_file : input fasta file name
 gene_file : file with genes (e.g. dnaA)
-skip : list or file of contig ids to skip (i.e. do not break at gene location)
+skip : list or file of contig ids to skip 
 hit_percent_id : min percent identity of matches to gene
 match_length_percent : min length of ref match expressed as % of gene length (default 80%)
 choose_random_gene : if genes in file cannot be found, run prodigal and find random gene (default True)
-rename : rename contigs (default True)
+rename : rename contigs to be either chromosomes or plasmids depending on length and presence/absence of dnaA (default True)
 working_directory : path to working directory (default to current working directory)
 summary_file : summary file
 summary prefix : the prefix for each line in summary file
@@ -24,8 +25,9 @@ break_finder = contig_break_finder.ContigBreakFinder(fasta_file = myfasta_file,
 													 gene_file = mydnaA_file,													     								       
 												     )
 break_finder.run()
-break_finder.output_file will be the cleaned fasta file
+break_finder.output_file will be the resulting fasta file
 break_finder.summary_file will be the summary file
+
 '''
 
 import os
@@ -85,7 +87,7 @@ class ContigBreakFinder:
 	
 		
 	def _run_prodigal_and_get_gene_starts(self):
-		'''Run prodigal and find best gene starts around middle of contigs''' 
+		'''Run prodigal and find the start of a gene around the middle of each contig''' 
 		gene_starts = {}
 		# run prodigal
 		prodigal_output = utils.run_prodigal(self.fasta_file, self._build_prodigal_filename(), self._get_length_of_fasta_file())
@@ -118,8 +120,126 @@ class ContigBreakFinder:
 				else:
 					gene_starts[id] = None # Could not find a gene			
 		return gene_starts	
-
 		
+		
+	def _best_promer_hit(self, promer_hits, contig_id):
+		'''Look for the best promer hit'''
+		complete_dnaA_found = False
+		break_point = None
+		on_reverse_strand = False
+		dnaA_name = None
+		if not promer_hits:
+			return complete_dnaA_found, break_point, on_reverse_strand, dnaA_name
+		
+		best_hit = promer_hits[0]		
+		partial_hits_at_start = []
+		partial_hits_at_end = []	
+			
+		for algn in promer_hits:
+			# look for a complete match	
+			if self._is_complete_match_to_dnaa(algn, best_hit, contig_id):
+				complete_dnaA_found = True
+				best_hit = algn
+			else:
+				# look for partial matches at the start and end
+				if self._is_partial_match_at_start(algn, contig_id):
+					partial_hits_at_start.append(algn)
+				if self._is_partial_match_at_end(algn, contig_id):
+					partial_hits_at_end.append(algn)
+					
+		if complete_dnaA_found:
+			dnaA_name = best_hit.qry_name
+			if best_hit.on_same_strand():
+				break_point = best_hit.ref_start						
+			else:
+				break_point = (best_hit.ref_length - best_hit.ref_start) - 1 #interbase
+				on_reverse_strand = True
+		else:
+			# try partial hits
+			if(partial_hits_at_start and partial_hits_at_end):
+				complete_dnaA_found, break_point, on_reverse_strand, dnaA_name = self._best_promer_partial_hits(partial_hits_at_start, partial_hits_at_end)
+			
+		return complete_dnaA_found, break_point, on_reverse_strand, dnaA_name
+		
+		
+	def _is_complete_match_to_dnaa(self, hit, best_hit, contig_id):
+		''' Is hit a complete match to dnaA '''
+		if hit.ref_name == contig_id and \
+		   hit.qry_start == 0 and \
+		   hit.hit_length_qry >= (hit.qry_length * self.match_length_percent/100) and \
+		   hit.percent_identity >= self.hit_percent_id and \
+		   hit.hit_length_qry >= best_hit.hit_length_qry and \
+		   hit.percent_identity >= best_hit.percent_identity:	 
+		   return True
+		return False 
+	
+		
+	def _is_partial_match_at_start(self, hit, contig_id):
+		''' Is hit a partial match to dnaA at the start of contig '''
+		if hit.on_same_strand():
+			#print("Strand not reversed")
+			if hit.ref_name == contig_id and \
+		   	   hit.qry_end == hit.qry_length - 1 and \
+			   hit.ref_start == 0 and \
+			   hit.percent_identity >= self.hit_percent_id:	
+			   return True
+		else:
+			if hit.ref_name == contig_id and \
+		   	   hit.qry_end == 0 and \
+			   hit.ref_start == 0 and \
+			   hit.percent_identity >= self.hit_percent_id:	
+			   return True	
+		return False
+		
+	
+	def _is_partial_match_at_end(self, hit, contig_id):
+		''' Is hit a partial match to dnaA at the end of contig '''
+		if hit.on_same_strand():
+			if hit.ref_name == contig_id and \
+			   hit.qry_start == 0 and \
+			   hit.ref_end == hit.ref_length - 1 and \
+			   hit.percent_identity >= self.hit_percent_id:
+			   return True
+		else:
+			if hit.ref_name == contig_id and \
+			   hit.qry_start == hit.qry_length - 1 and \
+			   hit.ref_end == hit.ref_length - 1 and \
+			   hit.percent_identity >= self.hit_percent_id:
+			   return True
+		return False
+	
+		
+	def _best_promer_partial_hits(self, partial_hits_at_start, partial_hits_at_end):
+		''' Look through partial hits for cases where dnaA is split across the start and end of contig'''
+		complete_dnaA_found = False
+		break_point = None
+		on_reverse_strand = False
+		dnaA_name = None
+		best_start_hit = partial_hits_at_start[0]
+		best_end_hit = partial_hits_at_end[0]
+				
+		for hit_at_start in partial_hits_at_start:
+			for hit_at_end in partial_hits_at_end:
+				if  hit_at_start.qry_name == hit_at_end.qry_name and \
+					(hit_at_start.hit_length_qry + hit_at_end.hit_length_qry) == hit_at_start.qry_length and \
+					hit_at_start.qry_length == hit_at_end.qry_length and \
+					(bool(hit_at_start.on_same_strand) is bool(hit_at_end.on_same_strand)) and \
+ 					hit_at_start.percent_identity >= best_start_hit.percent_identity and \
+ 					hit_at_end.percent_identity >= best_end_hit.percent_identity:					
+					best_start_hit = hit_at_start
+					best_end_hit = hit_at_end
+					complete_dnaA_found = True
+		
+		if complete_dnaA_found:
+
+			dnaA_name = best_start_hit.qry_name
+			if best_end_hit.on_same_strand():
+				break_point = best_end_hit.ref_start						
+			else:
+				break_point = (best_end_hit.ref_length - best_end_hit.ref_start) - 1 #interbase
+				on_reverse_strand = True
+		return complete_dnaA_found, break_point, on_reverse_strand, dnaA_name
+									
 		
 	def _build_final_filename(self):
 		'''Build output filename'''
@@ -159,7 +279,7 @@ class ContigBreakFinder:
 	
 
 	def run(self):
-		'''Look for break point in contigs and rename if needed'''
+		'''Look for break points in contigs'''
 		contigs_in_file = set(self.contigs.keys())		
 		if contigs_in_file != self.ids_to_skip:
 			# run promer and prodigal only if needed
@@ -172,30 +292,18 @@ class ContigBreakFinder:
 		
 		output_fw = fastaqutils.open_file_write(self.output_file)
 		for contig_id in self.contigs:
-			contig_sequence = self.contigs[contig_id]
-			dnaA_found = False
+			contig_sequence = self.contigs[contig_id]	
 			gene_name = None
-			gene_on_reverse_strand = False
 			new_name = contig_id 
-			break_point = None
 			skipped = False
+			break_point = None
+			on_reverse_strand = False
 			
 			if contig_id not in self.ids_to_skip:				
-				# Look for dnaA
-				for algn in dnaA_alignments:			
-					if algn.ref_name == contig_id and \
-					   algn.hit_length_qry >= (algn.qry_length * self.match_length_percent/100) and \
-					   algn.percent_identity >= self.hit_percent_id and \
-					   algn.qry_start == 0:	     
-						dnaA_found = True
-						gene_name = algn.qry_name
-						if algn.on_same_strand():
-							break_point = algn.ref_start						
-						else:
-							break_point = (algn.ref_length - algn.ref_start) - 1 #interbase
-							gene_on_reverse_strand = True
-						new_name = 'chromosome_' + str(chromosome_count)
-						chromosome_count += 1		
+				dnaA_found, break_point, on_reverse_strand, gene_name  = self._best_promer_hit(dnaA_alignments, contig_id)
+				if dnaA_found:
+					new_name = 'chromosome_' + str(chromosome_count)
+					chromosome_count += 1		
 				
 				# Or look for a gene in prodigal results
 				if not dnaA_found and self.choose_random_gene:
@@ -210,18 +318,18 @@ class ContigBreakFinder:
 				
 				# circularise the contig				
 				if break_point:
-					if gene_on_reverse_strand:
+					if on_reverse_strand:
 						contig_sequence.revcomp()
 					contig_sequence = contig_sequence[break_point:] + contig_sequence[0:break_point]
 					self.contigs[contig_id].seq = contig_sequence
-			
+				
 			else: # Skipped, just write contig as it is
 				skipped = True
 	
 			# write the contig out			
 			contig_name = new_name if self.rename else contig_id
 			print(sequences.Fasta(contig_name, contig_sequence), file=output_fw)
-			self._write_summary(contig_id, break_point, gene_name, gene_on_reverse_strand, new_name, skipped)
+			self._write_summary(contig_id, break_point, gene_name, on_reverse_strand, new_name, skipped)
 			
 		fastaqutils.close(output_fw)
 

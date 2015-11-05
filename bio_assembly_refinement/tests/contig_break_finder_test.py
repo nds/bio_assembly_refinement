@@ -10,7 +10,6 @@ data_dir = os.path.join(modules_dir, 'tests', 'data')
 
 class TestContigBreakFinder(unittest.TestCase):
 	def test_finding_dnaA_in_various_positions(self):
-		
 		tests = [
 			#dnaa at start - return identical sequence
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_at_start.fa"), 
@@ -70,7 +69,72 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											 choose_random_gene=False, 
 							      											 rename = False,	
 							      											), 
-													'BREAKFINDER_output_multiple_dnaa.fa' ], 			
+													'BREAKFINDER_output_multiple_dnaa.fa' ], 		
+			# dnaa split across edges - just 4 bases of dnaa at the end 
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											), 
+													'BREAKFINDER_output_dnaa_at_start.fa' ], 
+			# dnaa split across edges - just 5 bases of dnaa at the start 
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge_2.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											), 
+													'BREAKFINDER_output_dnaa_at_start.fa' ], 			
+			# dnaa split across edge with just a few bases at the end, but contig too short to attempt creating a test contig
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_contig_too_short.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											), 
+													'BREAKFINDER_input_contig_too_short.fa' ], 			
+			# dnaa split with 18 bases at end (6 is the default min length of a single promer match - measured in amino acids) 
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_minclusterlen.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											), 
+													'BREAKFINDER_output_dnaa_at_start.fa' ], 			
+			# dnaa split with 17 bases at end (6 is the default min length of a single promer match - measured in amino acids) 
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_less_minclusterlen.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											), 
+													'BREAKFINDER_output_dnaa_at_start.fa' ], 
+			#rename genes
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_at_start.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = True,	
+							      											), 
+													'BREAKFINDER_output_dnaa_at_start.fa' ], 	
+			# no dnaa, but use prodigal	
+#  			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_no_dnaa_use_prodigal.fa"), 
+#  							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_real_dnaa.fa"), 
+#  							      											 choose_random_gene=True, 
+#  							      											 rename = False,	
+#  							      											), 
+#  													'BREAKFINDER_output_no_dnaa_use_prodigal.fa' ], 										
+			# skip one contig
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											 skip = os.path.join(data_dir, "BREAKFINDER_skip_one_id.txt")
+							      											), 
+													'BREAKFINDER_output_skip_contig.fa' ], 				
+			# skip all contigs	
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = True,	
+							      											 skip = os.path.join(data_dir, "BREAKFINDER_skip_all.txt")
+							      											), 
+													'BREAKFINDER_input_multiple_contigs.fa' ], 	# do not change anything								
 
  			]
 				
@@ -87,47 +151,17 @@ class TestContigBreakFinder(unittest.TestCase):
 
 
 
-	def test_options(self):	
-		tests_for_options = [
-			#rename genes
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_at_start.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = True,	
-							      											), 
-													'BREAKFINDER_output_dnaa_at_start.fa' ], 	
-			# no dnaa, but use prodigal	
- 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_no_dnaa_use_prodigal.fa"), 
- 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_real_dnaa.fa"), 
- 							      											 choose_random_gene=True, 
- 							      											 rename = False,	
- 							      											), 
- 													'BREAKFINDER_output_no_dnaa_use_prodigal.fa' ], 										
-			# skip one contig
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = False,	
-							      											 skip = os.path.join(data_dir, "BREAKFINDER_skip_one_id.txt")
-							      											), 
-													'BREAKFINDER_output_skip_contig.fa' ], 				
-			# skip all contigs	
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = True,	
-							      											 skip = os.path.join(data_dir, "BREAKFINDER_skip_all.txt")
-							      											), 
-													'BREAKFINDER_input_multiple_contigs.fa' ], 	# do not change anything							
-			]
-			
-		for t in tests_for_options:
-			t[0].run()
-			expected_contigs = {}
-			tasks.file_to_dict(os.path.join(data_dir, t[1]), expected_contigs)
-			for id in expected_contigs.keys():
-				self.assertTrue(expected_contigs[id].seq == t[0].contigs[id].seq)
-			os.remove(t[0].output_file)
-			os.remove(t[0].summary_file)	
-	
-	
+	def test_debug_option(self):	
+		# debug option true
+		cbf = contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge.fa"), 
+							      										gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      									    choose_random_gene=False, 
+							      										rename = False,	
+							      										debug = True
+							      									)
+		cbf.run()		
+		files_to_expect_during_debug = [ 'promer_dnaA_hits.coords','tmp_contig_file_contig_1.fa', 'tmp_promer_contig_1.hits']
+		for file in files_to_expect_during_debug:
+			self.assertTrue(os.path.isfile(file))
+			os.remove(file)
+ 		 

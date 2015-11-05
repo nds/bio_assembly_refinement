@@ -141,7 +141,7 @@ class ContigBreakFinder:
 				complete_dnaA_found = True
 				best_hit = algn
 			else:
-				# look for partial matches at the start and end
+				# keep track of for partial matches at the start and end to use later if needed
 				if self._is_partial_match_at_start(algn, contig_id):
 					partial_hits_at_start.append(algn)
 				if self._is_partial_match_at_end(algn, contig_id):
@@ -230,7 +230,6 @@ class ContigBreakFinder:
 					complete_dnaA_found = True
 		
 		if complete_dnaA_found:
-
 			dnaA_name = best_start_hit.qry_name
 			if best_end_hit.on_same_strand():
 				break_point = best_end_hit.ref_start						
@@ -238,7 +237,29 @@ class ContigBreakFinder:
 				break_point = (best_end_hit.ref_length - best_end_hit.ref_start) - 1 #interbase
 				on_reverse_strand = True
 		return complete_dnaA_found, break_point, on_reverse_strand, dnaA_name
-									
+		
+	
+	def _build_temp_contig(self, contig_id, length):
+		'''Construct a contig with the first and last x bases of contig, write to file'''
+		contig_sequence = self.contigs[contig_id].seq 
+		new_contig_sequence = contig_sequence[length:] + contig_sequence[0:length]
+		output_filename = "tmp_contig_file_" + contig_id + ".fa"
+		output_fw = fastaqutils.open_file_write(output_filename)
+		print(sequences.Fasta(contig_id, new_contig_sequence), file=output_fw)
+		fastaqutils.close(output_fw)
+		return output_filename
+		
+		
+	def _get_max_length(self, filename):
+		'''Get the length of the longest contig in file'''
+		contigs = sequences.file_reader(filename)
+		try:
+			max_length = max([len(x) for x in contigs])
+		except:
+			print("Error - could not find max length of sequences in " + filename)
+			return None
+		return max_length + 10  # adding 10 for extra allowance when running promer
+					
 		
 	def _build_final_filename(self):
 		'''Build output filename'''
@@ -281,15 +302,15 @@ class ContigBreakFinder:
 		'''Look for break points in contigs'''
 		contigs_in_file = set(self.contigs.keys())		
 		if contigs_in_file != self.ids_to_skip:
-			# run promer and prodigal only if needed
 			dnaA_alignments = utils.run_nucmer(self.fasta_file, self.gene_file, self._build_promer_filename(), min_percent_id=self.hit_percent_id, run_promer=True)
 			if self.choose_random_gene:
 				self.random_gene_starts = self._run_prodigal_and_get_gene_starts()
 		
 		chromosome_count = 1
-		plasmid_count = 1
-		
+		plasmid_count = 1		
 		output_fw = fastaqutils.open_file_write(self.output_file)
+		files_to_delete = []
+		
 		for contig_id in self.contigs:
 			contig_sequence = self.contigs[contig_id]	
 			gene_name = None
@@ -302,18 +323,30 @@ class ContigBreakFinder:
 				dnaA_found, break_point, on_reverse_strand, gene_name  = self._best_promer_hit(dnaA_alignments, contig_id)
 				if dnaA_found:
 					new_name = 'chromosome_' + str(chromosome_count)
-					chromosome_count += 1		
-				
-				# Or look for a gene in prodigal results
-				if not dnaA_found and self.choose_random_gene:
-					if contig_id in self.random_gene_starts and self.random_gene_starts[contig_id]:
-						gene_name = 'prodigal'
-						if self.random_gene_starts[contig_id].strand == '+':			
-							break_point = self.random_gene_starts[contig_id].start
-						else:		
-							break_point = (len(self.contigs[contig_id]) - self.random_gene_starts[contig_id].start) - 1 #interbase
-							gene_on_reverse_strand = True
-						new_name = 'plasmid_' + str(plasmid_count)
+					chromosome_count += 1					
+				else:
+					# re-run promer on a new contig constructed by two parts of this contig 
+					max_seq_length = self._get_max_length(self.gene_file)
+					if(len(contig_sequence) > (max_seq_length)): 
+						temp_fasta_file = self._build_temp_contig(contig_id, max_seq_length)
+						temp_promer_hits_file = "tmp_promer_" + contig_id + ".hits"
+						dnaA_alignments_on_one_contig = utils.run_nucmer(temp_fasta_file, self.gene_file, temp_promer_hits_file , min_percent_id=self.hit_percent_id, run_promer=True)
+						dnaA_found, break_point, on_reverse_strand, gene_name  = self._best_promer_hit(dnaA_alignments_on_one_contig, contig_id)
+						if break_point:
+							break_point = break_point + max_seq_length # adjust breakpoint to take into account the contig constructing we've done
+						files_to_delete.append(temp_fasta_file)
+						files_to_delete.append(temp_promer_hits_file)
+						
+					# If the dnaa has still not been found, look for a gene in prodigal results
+					if not dnaA_found and self.choose_random_gene:
+						if contig_id in self.random_gene_starts and self.random_gene_starts[contig_id]:
+							gene_name = 'prodigal'
+							if self.random_gene_starts[contig_id].strand == '+':			
+								break_point = self.random_gene_starts[contig_id].start
+							else:		
+								break_point = (len(self.contigs[contig_id]) - self.random_gene_starts[contig_id].start) - 1 #interbase
+								gene_on_reverse_strand = True
+							new_name = 'plasmid_' + str(plasmid_count)
 				
 				# circularise the contig				
 				if break_point:
@@ -336,3 +369,6 @@ class ContigBreakFinder:
 		if not self.debug:
 			utils.delete(self._build_promer_filename())
 			utils.delete(self._build_prodigal_filename())
+			for file in files_to_delete:
+ 				utils.delete(file)
+			

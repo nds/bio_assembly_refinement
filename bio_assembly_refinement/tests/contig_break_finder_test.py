@@ -26,6 +26,13 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											 rename = False,	
 							      											), 
 													'BREAKFINDER_output_dnaa_in_middle.fa' ], 
+			# dnaa in middle of contig  but revcom
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_in_middle_revcom.fa"), 
+							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+							      											 choose_random_gene=False, 
+							      											 rename = False,	
+							      											), 
+													'BREAKFINDER_output_dnaa_in_middle.fa' ], 			
 			
 			# dnaa at the end
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_at_end.fa"), 
@@ -35,28 +42,21 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											), 
 													'BREAKFINDER_output_dnaa_at_end.fa' ], 
 													
-			# dnaa split across start and end
+			# dnaa split across start and end, but chunks large enough for promer to detect
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
 							      											 rename = False,	
 							      											), 
-													'BREAKFINDER_output_dnaa_split.fa' ], 
-			# dnaa in middle of contig  but revcom
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_in_middle_revcom.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = False,	
-							      											), 
-													'BREAKFINDER_output_dnaa_in_middle.fa' ], 											
+													'BREAKFINDER_output_dnaa_split.fa' ], 								
 			# dnaa split across start and end but revcom
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_revcom.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = False,	
-							      											), 
-													'BREAKFINDER_output_dnaa_split_revcom.fa' ], 
-			# no dnaa 
+		[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_revcom.fa"), 
+ 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
+ 							      											 choose_random_gene=False, 
+ 							      											 rename = False,	
+ 							      											), 
+ 													'BREAKFINDER_output_dnaa_split_revcom.fa' ], 
+			#no dnaa 
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_no_dnaa.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
@@ -70,41 +70,28 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											 rename = False,	
 							      											), 
 													'BREAKFINDER_output_multiple_dnaa.fa' ], 		
-			# dnaa split across edges - just 4 bases of dnaa at the end 
+			# dnaa split across edges - just 4 bases of dnaa at the end, contig long enough to run promer on just the edges stuck together
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
 							      											 rename = False,	
 							      											), 
-													'BREAKFINDER_output_dnaa_at_start.fa' ], 
-			# dnaa split across edges - just 5 bases of dnaa at the start 
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge_2.fa"), 
+													'BREAKFINDER_output_dnaa_split_edge.fa' ], 
+			# dnaa split across edges and rev com- just 4 bases of dnaa at the end, contig long enough to run promer on just the edges stuck together
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge_revcom.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
 							      											 rename = False,	
 							      											), 
-													'BREAKFINDER_output_dnaa_at_start.fa' ], 			
-			# dnaa split across edge with just a few bases at the end, but contig too short to attempt creating a test contig
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_contig_too_short.fa"), 
+													'BREAKFINDER_output_dnaa_split_edge.fa' ], 
+			# dnaa split across edges  (just 5 bases of dnaa at the start) but contig not long enough to run promer on just ends - will not find dnaA
+			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_edge_tooshort.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
 							      											 rename = False,	
 							      											), 
-													'BREAKFINDER_input_contig_too_short.fa' ], 			
-			# dnaa split with 18 bases at end (6 is the default min length of a single promer match - measured in amino acids) 
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_minclusterlen.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = False,	
-							      											), 
-													'BREAKFINDER_output_dnaa_at_start.fa' ], 			
-			# dnaa split with 17 bases at end (6 is the default min length of a single promer match - measured in amino acids) 
-			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_split_less_minclusterlen.fa"), 
-							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
-							      											 choose_random_gene=False, 
-							      											 rename = False,	
-							      											), 
-													'BREAKFINDER_output_dnaa_at_start.fa' ], 
+													'BREAKFINDER_input_dnaa_split_edge_tooshort.fa' ], 	
+			# ---- testing other options -----------		
 			#rename genes
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_dnaa_at_start.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
@@ -112,14 +99,14 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											 rename = True,	
 							      											), 
 													'BREAKFINDER_output_dnaa_at_start.fa' ], 	
-			# no dnaa, but use prodigal	
+#			#no dnaa, but use prodigal	
 #  			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_no_dnaa_use_prodigal.fa"), 
 #  							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_real_dnaa.fa"), 
 #  							      											 choose_random_gene=True, 
 #  							      											 rename = False,	
 #  							      											), 
 #  													'BREAKFINDER_output_no_dnaa_use_prodigal.fa' ], 										
-			# skip one contig
+			#skip one contig
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
@@ -127,7 +114,7 @@ class TestContigBreakFinder(unittest.TestCase):
 							      											 skip = os.path.join(data_dir, "BREAKFINDER_skip_one_id.txt")
 							      											), 
 													'BREAKFINDER_output_skip_contig.fa' ], 				
-			# skip all contigs	
+			#skip all contigs	
 			[contig_break_finder.ContigBreakFinder(fasta_file = os.path.join(data_dir, "BREAKFINDER_input_multiple_contigs.fa"), 
 							      											 gene_file = os.path.join(data_dir, "BREAKFINDER_test_dnaA.fa"), 
 							      											 choose_random_gene=False, 
@@ -137,7 +124,7 @@ class TestContigBreakFinder(unittest.TestCase):
 													'BREAKFINDER_input_multiple_contigs.fa' ], 	# do not change anything								
 
  			]
-				
+
 		for t in tests:
 			t[0].run()
 			self.assertTrue(os.path.isfile(t[0].output_file))
@@ -160,7 +147,7 @@ class TestContigBreakFinder(unittest.TestCase):
 							      										debug = True
 							      									)
 		cbf.run()		
-		files_to_expect_during_debug = [ 'promer_dnaA_hits.coords','tmp_contig_file_contig_1.fa', 'tmp_promer_contig_1.hits']
+		files_to_expect_during_debug = [ 'promer_dnaA_hits.coords','temp_BREAKFINDER_input_dnaa_split_edge.fa']
 		for file in files_to_expect_during_debug:
 			self.assertTrue(os.path.isfile(file))
 			os.remove(file)

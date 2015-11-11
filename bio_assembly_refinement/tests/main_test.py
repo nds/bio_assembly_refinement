@@ -10,7 +10,7 @@ class TestMain(unittest.TestCase):
 	def test_process_assembly(self):
 		'''Test steps of contig cleanup '''
 		input_file = os.path.join(data_dir, 'CLEANUP_input_1.fa')
-		test_dnaA_file = os.path.join(data_dir, "dnaA.fa")
+		test_dnaA_file = os.path.join(data_dir, "test_dnaA.fa")
 		intermediate_file = os.path.join(os.getcwd(), 'circularised_trimmed_filtered_CLEANUP_input_1.fa')
 			
 		processor = main.Main( fasta_file = input_file, 
